@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
-import { analyzePhases, peak, shareAbove } from "../lib/analysis.js";
+import { analyzePhases, finding, peak, shareAbove } from "../lib/analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, valueAt } from "../lib/series.js";
 import AnalysisTable from "./AnalysisTable.jsx";
 import RiskGauge from "./RiskGauge.jsx";
 import { isLive } from "./SessionRail.jsx";
 import TimeChart from "./TimeChart.jsx";
 
-const COLORS = { fear: "#C2255C", arousal: "#E8A200", hr: "#C2255C", pitch: "#0B7285", speed: "#0B7285" };
+// Jediná farba obrazovky patrí odhadu strachu. Ostatné rady sú v atramente, porovnanie je šedé.
+const COLORS = { fear: "var(--accent)", arousal: "var(--comparison)", ink: "var(--text)" };
 const LIVE_WINDOW_S = 90;
 const phaseName = (p) => `Fáza ${p + 1}`;
 
@@ -66,11 +67,11 @@ function useSession(session, live) {
   return { points, risk, summary, error, loading };
 }
 
-function Stat({ label, value }) {
+function Stat({ label, value, unit }) {
   return (
     <div className="stat">
       <dt>{label}</dt>
-      <dd>{value}</dd>
+      <dd>{value}{value !== "–" && unit && <small>{unit}</small>}</dd>
     </div>
   );
 }
@@ -101,10 +102,13 @@ export default function SessionView({ session, user, onErased }) {
 
   const hasFear = relRisk.some((r) => r.fear != null);
   const mainKey = hasFear ? "fear" : "arousal";
+  const peakValue = peak(relRisk, mainKey);
+  const share = shareAbove(relRisk, mainKey);
+  const sentence = useMemo(() => finding(rel, relRisk, phaseName), [rel, relRisk]);
   const gaugeAt = (key) => (hoverT == null ? relRisk[relRisk.length - 1]?.[key] : valueAt(relRisk, hoverT, key)) ?? null;
   const riskSeries = [
     ...(hasFear ? [{ key: "fear", label: "Strach", color: COLORS.fear }] : []),
-    { key: "arousal", label: "Vzrušenie", color: COLORS.arousal },
+    { key: "arousal", label: "Vzrušenie", color: hasFear ? COLORS.arousal : COLORS.fear },
   ];
   const common = { xDomain, bands, hoverT, onHover: setHoverT, showClock: true };
   const marks = events.filter((e) => e.kind === "reaction_time").map((e) => ({ t: e.t, label: `Reakcia ${Math.round(e.value_ms)} ms` }));
@@ -123,11 +127,12 @@ export default function SessionView({ session, user, onErased }) {
     <main className="view">
       <header className="view-head">
         <div>
-          <h2>{session.participant}</h2>
+          <h1>{session.participant}</h1>
           <p className="muted">Relácia {session.id}</p>
+          {sentence && <p className="finding">{sentence}</p>}
         </div>
         <div className="actions">
-          <button className={`chip ${live ? "on" : ""}`} aria-pressed={live} onClick={() => setLive(!live)}>
+          <button className="chip" aria-pressed={live} onClick={() => setLive(!live)}>
             {live ? "Živý prenos" : "Záznam"}
           </button>
           {live && (
@@ -135,9 +140,9 @@ export default function SessionView({ session, user, onErased }) {
               {wholeSession ? "Celá relácia" : `Posledných ${LIVE_WINDOW_S} s`}
             </button>
           )}
-          <button onClick={() => api.download(session.id, "csv")}>Stiahnuť CSV</button>
-          <button onClick={() => api.download(session.id, "json")}>Stiahnuť JSON</button>
-          {user.role === "admin" && <button className="danger" onClick={erase}>Vymazať účastníka</button>}
+          <button className="primary" onClick={() => api.download(session.id, "csv")}>Stiahnuť CSV</button>
+          <button className="quiet" onClick={() => api.download(session.id, "json")}>Stiahnuť JSON</button>
+          {user.role === "admin" && <button className="link" onClick={erase}>Vymazať účastníka</button>}
         </div>
       </header>
 
@@ -151,25 +156,25 @@ export default function SessionView({ session, user, onErased }) {
         <>
           <dl className="stats">
             <Stat label="Trvanie" value={formatClock(end)} />
-            <Stat label="Tep teraz" value={rel[rel.length - 1].hr != null ? `${Math.round(rel[rel.length - 1].hr)} bpm` : "–"} />
-            <Stat label="Najvyšší odhad" value={peak(relRisk, mainKey) == null ? "–" : `${Math.round(peak(relRisk, mainKey) * 100)} %`} />
-            <Stat label="Čas nad 70 %" value={shareAbove(relRisk, mainKey) == null ? "–" : `${Math.round(shareAbove(relRisk, mainKey) * 100)} %`} />
+            <Stat label="Tep teraz" value={rel[rel.length - 1].hr != null ? String(Math.round(rel[rel.length - 1].hr)) : "–"} unit="bpm" />
+            <Stat label="Najvyšší odhad" value={peakValue == null ? "–" : String(Math.round(peakValue * 100))} unit="%" />
+            <Stat label="Podiel času nad 70 %" value={share == null ? "–" : String(Math.round(share * 100))} unit="%" />
           </dl>
 
           <div className="workspace">
             <div className="charts">
               <TimeChart
                 {...common} title="Odhad stavu" unit="%" series={riskSeries} data={view(relRisk)}
-                yDomain={[0, 1]} format={(v) => (v * 100).toFixed(0)} markers={marks}
+                yDomain={[0, 1]} format={(v) => (v * 100).toFixed(0)} markers={marks} height={210}
               />
-              <TimeChart {...common} title="Tep" unit=" bpm" series={[{ key: "hr", label: "Tep", color: COLORS.hr }]} data={view(rel)} />
+              <TimeChart {...common} title="Tep" unit=" bpm" height={130} series={[{ key: "hr", label: "Tep", color: COLORS.ink }]} data={view(rel)} />
               <TimeChart
-                {...common} title="Pohľad hore a dole" unit="°"
-                series={[{ key: "pitch", label: "Sklon hlavy", color: COLORS.pitch }]} data={view(rel)}
+                {...common} title="Pohľad hore a dole" unit="°" height={120}
+                series={[{ key: "pitch", label: "Sklon hlavy", color: COLORS.ink }]} data={view(rel)}
               />
               <TimeChart
-                {...common} title="Rýchlosť otáčania hlavy" unit=" °/s" height={120}
-                series={[{ key: "speed", label: "Rýchlosť", color: COLORS.speed }]} data={view(speed)}
+                {...common} title="Rýchlosť otáčania hlavy" unit=" °/s" height={110}
+                series={[{ key: "speed", label: "Rýchlosť", color: COLORS.ink }]} data={view(speed)}
               />
               <p className="phase-key">
                 {bands.map((b, i) => (
@@ -181,7 +186,7 @@ export default function SessionView({ session, user, onErased }) {
           </div>
 
           <section className="analysis">
-            <h3>Súhrn po fázach</h3>
+            <h2>Súhrn po fázach</h2>
             <AnalysisTable rows={analysis} phaseName={phaseName} />
           </section>
         </>

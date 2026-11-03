@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzePhases, peak, shareAbove } from "./analysis.js";
+import { analyzePhases, finding, peak, shareAbove } from "./analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, valueAt } from "./series.js";
 
 const pt = (t, phase = 0, extra = {}) => ({ t, phase, hr: 80, pitch: 0, yaw: 0, ...extra });
@@ -66,5 +66,14 @@ describe("analysis", () => {
   it("computes peak and share above threshold", () => {
     expect(peak(risk, "fear")).toBe(0.8);
     expect(shareAbove(risk, "fear", 0.7)).toBe(0.5);
+  });
+
+  it("states the one finding with its baseline", () => {
+    const name = (p) => `Fáza ${p + 1}`;
+    expect(finding(points, risk, name)).toBe(
+      "Odhad strachu vrcholil na 80 % v čase 0:03. Tep vo fáze 2 je o 23 bpm vyšší než v fáze 1.",
+    );
+    expect(finding(points, [], name)).toBeNull();
+    expect(finding(points.slice(0, 2), risk, name)).toBe("Odhad strachu vrcholil na 80 % v čase 0:03.");
   });
 });

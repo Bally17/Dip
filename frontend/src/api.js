@@ -1,4 +1,7 @@
+import { demoApi } from "./demo.js";
+
 const BASE = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
+const DEMO = import.meta.env.DEV && new URLSearchParams(window.location.search).has("demo");
 const KEY = "dip-token";
 
 export class ApiError extends Error {
@@ -22,7 +25,7 @@ export function setUnauthorizedHandler(fn) {
 }
 
 export function hasToken() {
-  return Boolean(token);
+  return DEMO || Boolean(token);
 }
 
 export function setToken(value) {
@@ -57,7 +60,7 @@ async function request(path, { method = "GET", body, raw = false } = {}) {
   return raw ? res : res.json();
 }
 
-export const api = {
+const realApi = {
   login: (username, password) => request("/auth/login", { method: "POST", body: { username, password } }),
   me: () => request("/auth/me"),
   sessions: () => request("/sessions"),
@@ -75,3 +78,5 @@ export const api = {
     URL.revokeObjectURL(url);
   },
 };
+
+export const api = DEMO ? demoApi : realApi;

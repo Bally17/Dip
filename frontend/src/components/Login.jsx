@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { api, setToken } from "../api.js";
+import { Mark } from "./SessionRail.jsx";
 
 export default function Login({ onLogin }) {
   const [error, setError] = useState("");
@@ -23,13 +24,11 @@ export default function Login({ onLogin }) {
 
   return (
     <main className="login">
-      <div className="login-sky" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
       <form onSubmit={submit} className="login-form">
-        <h1>Výškomer</h1>
+        <div className="brand">
+          <Mark />
+          <strong>Výškomer</strong>
+        </div>
         <p>Sledovanie tepu a pohybu účastníka vo VR simulátore výšky.</p>
         <label>
           Meno
@@ -40,7 +39,7 @@ export default function Login({ onLogin }) {
           <input name="password" type="password" autoComplete="current-password" required />
         </label>
         {error && <p className="error" role="alert">{error}</p>}
-        <button type="submit" disabled={busy}>{busy ? "Prihlasujem" : "Prihlásiť sa"}</button>
+        <button type="submit" className="primary" disabled={busy}>{busy ? "Prihlasujem" : "Prihlásiť sa"}</button>
       </form>
     </main>
   );

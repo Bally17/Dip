@@ -60,6 +60,10 @@ export default function TimeChart({
 
   const live = hoverT == null;
   const shown = (key) => (live ? data[data.length - 1]?.[key] : valueAt(data, hoverT, key));
+  const summary = series
+    .map((s) => (shown(s.key) != null ? `${s.label} ${format(shown(s.key))}${unit}` : null))
+    .filter(Boolean)
+    .join(", ");
 
   return (
     <figure className="chart" ref={ref}>
@@ -68,15 +72,15 @@ export default function TimeChart({
         <span className="chart-legend">
           {series.map((s) => (
             <span key={s.key} className="legend-item">
-              <i style={{ background: s.color }} aria-hidden="true" />
-              {s.label}
+              {series.length > 1 && <i style={{ background: s.color }} aria-hidden="true" />}
+              {series.length > 1 && s.label}
               <b>{shown(s.key) != null ? `${format(shown(s.key))}${unit}` : "–"}</b>
             </span>
           ))}
         </span>
       </figcaption>
       <svg
-        width={width} height={height} role="img" aria-label={title}
+        width={width} height={height} role="img" aria-label={summary ? `${title}: ${summary}` : title}
         onMouseMove={move} onMouseLeave={() => onHover?.(null)}
       >
         {bands.map((b, i) => (
@@ -91,7 +95,7 @@ export default function TimeChart({
         {yTicks.map((v) => (
           <g key={v}>
             <line x1={M.left} x2={width - M.right} y1={y(v)} y2={y(v)} className="grid" />
-            <text x={M.left - 6} y={y(v) + 4} textAnchor="end" className="tick">{format(v)}</text>
+            <text x={M.left - 6} y={y(v) + 4} textAnchor="end" className="tick num">{format(v)}</text>
           </g>
         ))}
         {xTicks.map((t) => (
