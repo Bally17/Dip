@@ -1,6 +1,8 @@
+import asyncio
 import os
 from pathlib import Path
 
+from psycopg.errors import DeadlockDetected
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
@@ -46,7 +48,22 @@ def _pose(p):
     return Jsonb(p.model_dump()) if p else None
 
 
+SAVE_ATTEMPTS = 4
+
+
 async def save(msg: Sample | Event | Questionnaire) -> None:
+    """Uloží správu. Dva súčasné príjmy môžu pri vytváraní chunku hypertabuľky skončiť deadlockom, tak sa to opakuje."""
+    for attempt in range(1, SAVE_ATTEMPTS + 1):
+        try:
+            await _save_once(msg)
+            return
+        except DeadlockDetected:
+            if attempt == SAVE_ATTEMPTS:
+                raise
+            await asyncio.sleep(0.05 * attempt)
+
+
+async def _save_once(msg: Sample | Event | Questionnaire) -> None:
     async with _pool.connection() as conn:
         await conn.execute(
             "INSERT INTO participants (code) VALUES (%s) ON CONFLICT DO NOTHING",
