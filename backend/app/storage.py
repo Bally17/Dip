@@ -30,6 +30,18 @@ async def close_pool() -> None:
         await _pool.close()
 
 
+async def recent_samples(session: str, seconds: float) -> list[tuple[float, float | None, dict]]:
+    """Posledné vzorky relácie ako (čas v s, tep, rotácia hlavy), od najstaršej."""
+    async with _pool.connection() as conn:
+        cur = await conn.execute(
+            "SELECT extract(epoch FROM ts), heart_rate, head->'rot' FROM samples"
+            " WHERE session = %s AND ts > (SELECT max(ts) FROM samples WHERE session = %s)"
+            " - make_interval(secs => %s) ORDER BY ts",
+            (session, session, seconds),
+        )
+        return [(float(t), hr, rot) for t, hr, rot in await cur.fetchall()]
+
+
 def _pose(p):
     return Jsonb(p.model_dump()) if p else None
 
