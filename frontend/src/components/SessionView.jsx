@@ -130,9 +130,11 @@ export default function SessionView({ session, user, onErased }) {
           <button className={`chip ${live ? "on" : ""}`} aria-pressed={live} onClick={() => setLive(!live)}>
             {live ? "Živý prenos" : "Záznam"}
           </button>
-          <button className="chip" aria-pressed={wholeSession} onClick={() => setWholeSession(!wholeSession)}>
-            {wholeSession ? "Celá relácia" : `Posledných ${LIVE_WINDOW_S} s`}
-          </button>
+          {live && (
+            <button className="chip" aria-pressed={wholeSession} onClick={() => setWholeSession(!wholeSession)}>
+              {wholeSession ? "Celá relácia" : `Posledných ${LIVE_WINDOW_S} s`}
+            </button>
+          )}
           <button onClick={() => api.download(session.id, "csv")}>Stiahnuť CSV</button>
           <button onClick={() => api.download(session.id, "json")}>Stiahnuť JSON</button>
           {user.role === "admin" && <button className="danger" onClick={erase}>Vymazať účastníka</button>}

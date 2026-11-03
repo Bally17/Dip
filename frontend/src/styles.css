@@ -108,7 +108,7 @@ button:disabled { opacity: 0.6; cursor: progress; }
 .grid { stroke: var(--line); stroke-width: 1; }
 .tick { fill: var(--slate); font-size: 11px; font-family: var(--font-body); }
 .cursor { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; }
-.marker { fill: var(--ink); }
+.marker { fill: var(--ink); opacity: 0.28; }
 .band-0 { fill: rgba(18, 32, 43, 0.04); }
 .band-1 { fill: rgba(11, 114, 133, 0.11); }
 .phase-key { display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; margin: 0.25rem 0 0 46px; font-size: 0.85rem; color: var(--slate); }
