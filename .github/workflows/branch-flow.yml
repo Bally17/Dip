@@ -1,0 +1,24 @@
+name: branch-flow
+on:
+  pull_request:
+    branches: [main, develop, release]
+    types: [opened, synchronize, reopened, edited]
+jobs:
+  source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kontrola zdrojovej branche podľa git flow
+        env:
+          BASE: ${{ github.base_ref }}
+          HEAD: ${{ github.head_ref }}
+        run: |
+          case "$BASE" in
+            main)    allowed='^(release|hotfix/.+)$' ;;
+            develop) allowed='^(feature/.+|bugfix/.+|hotfix/.+)$' ;;
+            release) allowed='^develop$' ;;
+          esac
+          if [[ ! "$HEAD" =~ $allowed ]]; then
+            echo "Do $BASE sa nedá mergnúť z $HEAD (povolené: $allowed)"
+            exit 1
+          fi
+          echo "$HEAD -> $BASE je v poriadku"
