@@ -62,6 +62,7 @@ export default function App() {
         />
       ) : (
         <main className="view">
+          <h1>Výškomer</h1>
           <p className="empty">Vyber reláciu vľavo. Keď simulátor začne posielať dáta, objaví sa tu živý prenos.</p>
         </main>
       )}

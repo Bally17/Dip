@@ -1,6 +1,6 @@
 import { formatClock } from "../lib/series.js";
 
-const fmt = (v, digits = 0, suffix = "") => (v == null ? "–" : `${v.toFixed(digits)}${suffix}`);
+const fmt = (v, unit) => (v == null ? "–" : <>{v.toFixed(0)}<small>{unit}</small></>);
 
 export default function AnalysisTable({ rows, phaseName }) {
   if (!rows.length) return <p className="empty">Po prvých vzorkách sa tu zobrazí súhrn po fázach.</p>;
@@ -22,10 +22,10 @@ export default function AnalysisTable({ rows, phaseName }) {
             <tr key={r.phase}>
               <th scope="row">{phaseName(r.phase)}</th>
               <td>{formatClock(r.durationS)}</td>
-              <td>{fmt(r.hrMean, 0, " bpm")}</td>
-              <td>{fmt(r.headSpeedMean, 0, " °/s")}</td>
-              <td>{r.riskMean == null ? "–" : `${Math.round(r.riskMean * 100)} %`}</td>
-              <td>{fmt(r.reactionMs, 0, " ms")}</td>
+              <td>{fmt(r.hrMean, "bpm")}</td>
+              <td>{fmt(r.headSpeedMean, "°/s")}</td>
+              <td>{r.riskMean == null ? "–" : <>{Math.round(r.riskMean * 100)}<small>%</small></>}</td>
+              <td>{fmt(r.reactionMs, "ms")}</td>
             </tr>
           ))}
         </tbody>

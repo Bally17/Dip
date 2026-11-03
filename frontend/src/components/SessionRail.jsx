@@ -9,14 +9,27 @@ const ago = (iso) => {
 
 export const isLive = (session) => session?.last_ts && Date.now() - new Date(session.last_ts).getTime() < 15000;
 
+// Značka: zvislá stupnica s jednou zvýraznenou ryskou, výškomer v skratke.
+export function Mark({ size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true">
+      <rect width="28" height="28" rx="6" fill="#1d1f20" />
+      <path d="M9 7h10M9 12h6M9 17h10M9 22h6" stroke="#9aa1a9" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 12h6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export default function SessionRail({ sessions, selected, onSelect, user, onLogout, error }) {
   return (
     <aside className="rail">
-      <header className="rail-head">
-        <h1>Výškomer</h1>
-        <p>{user.username} ({user.role === "admin" ? "admin" : "výskumník"})</p>
-      </header>
+      <div className="brand">
+        <Mark />
+        <strong>Výškomer</strong>
+      </div>
+      <p className="scope">Štúdia strachu z výšky</p>
       <nav aria-label="Relácie">
+        <p className="group-label">Relácie</p>
         {error && <p className="rail-note" role="alert">{error}</p>}
         {!error && sessions.length === 0 && (
           <p className="rail-note">Zatiaľ nie je žiadna relácia. Spusti simulátor alebo mock sender.</p>
@@ -31,13 +44,16 @@ export default function SessionRail({ sessions, selected, onSelect, user, onLogo
               >
                 <span className="rail-name">{s.participant}</span>
                 <span className={`rail-meta ${isLive(s) ? "live" : ""}`}>{ago(s.last_ts)}</span>
-                <span className="rail-count">{s.samples} vzoriek</span>
+                <span className="rail-count num">{s.samples} vzoriek</span>
               </button>
             </li>
           ))}
         </ul>
       </nav>
-      <button className="rail-logout" onClick={onLogout}>Odhlásiť sa</button>
+      <div className="rail-user">
+        <span>{user.username} ({user.role === "admin" ? "admin" : "výskumník"})</span>
+        <button onClick={onLogout}>Odhlásiť sa</button>
+      </div>
     </aside>
   );
 }
