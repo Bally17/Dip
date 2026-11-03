@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -7,6 +8,9 @@ from pydantic import ValidationError
 
 from . import api, auth, inference, security, storage
 from .schemas import message_adapter
+
+
+logger = logging.getLogger("dip")
 
 
 @asynccontextmanager
@@ -53,7 +57,12 @@ async def ingest(ws: WebSocket, key: str | None = None):
                 continue
             msg.session = security.pseudonymize(f"{msg.participant}/{msg.session}", "s")
             msg.participant = security.pseudonymize(msg.participant, "p")
-            await storage.save(msg)
+            try:
+                await storage.save(msg)
+            except Exception:
+                logger.exception("Uloženie správy zlyhalo")
+                await ws.send_json({"ok": False, "error": "Správu sa nepodarilo uložiť"})
+                continue
             await ws.send_json({"ok": True})
     except WebSocketDisconnect:
         pass
