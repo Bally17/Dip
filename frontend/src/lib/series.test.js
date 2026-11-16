@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { analyzePhases, finding, peak, shareAbove } from "./analysis.js";
-import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, valueAt } from "./series.js";
+import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "./series.js";
 
 const pt = (t, phase = 0, extra = {}) => ({ t, phase, hr: 80, pitch: 0, yaw: 0, ...extra });
 
@@ -75,5 +75,40 @@ describe("analysis", () => {
     );
     expect(finding(points, [], name)).toBeNull();
     expect(finding(points.slice(0, 2), risk, name)).toBe("Odhad strachu vrcholil na 80 % v čase 0:03.");
+  });
+});
+
+describe("pointSpeed", () => {
+  const at = (t, x) => ({ t, left: { pos: [x, 1, 0] } });
+
+  it("počíta rýchlosť posunu v metroch za sekundu", () => {
+    const rows = pointSpeed([at(0, 0), at(0.5, 0.1), at(1, 0.1)], (p) => p.left?.pos);
+    expect(rows.map((r) => r.t)).toEqual([0.5, 1]);
+    expect(rows[0].speed).toBeCloseTo(0.2);
+    expect(rows[1].speed).toBeCloseTo(0);
+  });
+
+  it("vynechá vzorky, kde poloha chýba", () => {
+    const rows = pointSpeed([at(0, 0), { t: 0.5, left: null }, at(1, 0.3)], (p) => p.left?.pos);
+    expect(rows).toEqual([]);
+  });
+});
+
+describe("analyzePhases: časy fáz a úloh", () => {
+  const points = [
+    { t: 0, phase: 0, hr: 70, pitch: 0, yaw: 0 }, { t: 10, phase: 0, hr: 70, pitch: 0, yaw: 0 },
+    { t: 11, phase: 1, hr: 90, pitch: 0, yaw: 0 }, { t: 30, phase: 1, hr: 90, pitch: 0, yaw: 0 },
+  ];
+  const events = [
+    { t: 9, phase: 0, kind: "task1_time", value_ms: 8200 },
+    { t: 29, phase: 1, kind: "task2_time", value_ms: 15400 },
+  ];
+
+  it("vráti začiatok a koniec každej fázy a časy úloh", () => {
+    const [first, second] = analyzePhases(points, [], events);
+    expect([first.startT, first.endT]).toEqual([0, 10]);
+    expect([second.startT, second.endT]).toEqual([11, 30]);
+    expect([first.task1Ms, first.task2Ms]).toEqual([8200, null]);
+    expect([second.task1Ms, second.task2Ms]).toEqual([null, 15400]);
   });
 });

@@ -168,6 +168,7 @@ th:first-child, td:first-child { text-align: left; padding-left: 0; }
 tbody th { font-weight: 700; }
 tbody tr:last-child th, tbody tr:last-child td { border-bottom: 0; }
 td small { color: var(--muted); font-size: 13px; margin-left: 2px; }
+caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: 4px; }
 
 /* Prihlásenie */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }

@@ -71,3 +71,9 @@ def test_validation_error_does_not_echo_the_message_back(saved):
     reply = send({**SAMPLE, "participant": "TAJNY-KOD", "heart_rate": 999})
     assert reply["ok"] is False
     assert "TAJNY-KOD" not in str(reply) and "input" not in reply["error"][0]
+
+
+def test_questionnaire_is_not_part_of_the_format(saved):
+    reply = send({"type": "questionnaire", "participant": "P01", "session": "S1", "t": 1, "phase": 0, "score": 5})
+    assert reply["ok"] is False
+    assert saved == []

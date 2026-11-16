@@ -43,10 +43,5 @@ class Event(_Base):
     value_ms: float = Field(ge=0)
 
 
-class Questionnaire(_Base):
-    type: Literal["questionnaire"]
-    score: float = Field(ge=0)
-
-
-Message = Annotated[Sample | Event | Questionnaire, Field(discriminator="type")]
+Message = Annotated[Sample | Event, Field(discriminator="type")]
 message_adapter = TypeAdapter(Message)

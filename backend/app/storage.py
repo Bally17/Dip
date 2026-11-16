@@ -8,7 +8,7 @@ from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
 from psycopg_pool import AsyncConnectionPool
 
-from .schemas import Event, Questionnaire, Sample
+from .schemas import Event, Sample
 
 _pool: AsyncConnectionPool | None = None
 
@@ -52,7 +52,7 @@ def _pose(p):
 SAVE_ATTEMPTS = 4
 
 
-async def save(msg: Sample | Event | Questionnaire) -> None:
+async def save(msg: Sample | Event) -> None:
     """Uloží správu. Dva súčasné príjmy môžu pri vytváraní chunku hypertabuľky skončiť deadlockom, tak sa to opakuje."""
     for attempt in range(1, SAVE_ATTEMPTS + 1):
         try:
@@ -64,7 +64,7 @@ async def save(msg: Sample | Event | Questionnaire) -> None:
             await asyncio.sleep(0.05 * attempt)
 
 
-async def _save_once(msg: Sample | Event | Questionnaire) -> None:
+async def _save_once(msg: Sample | Event) -> None:
     async with _pool.connection() as conn:
         await conn.execute(
             "INSERT INTO participants (code) VALUES (%s) ON CONFLICT DO NOTHING",
@@ -81,17 +81,11 @@ async def _save_once(msg: Sample | Event | Questionnaire) -> None:
                 " VALUES (to_timestamp(%s), %s, %s, %s, %s, %s, %s)",
                 (ts, msg.session, msg.phase, msg.heart_rate, _pose(msg.head), _pose(msg.left), _pose(msg.right)),
             )
-        elif isinstance(msg, Event):
+        else:
             await conn.execute(
                 "INSERT INTO events (ts, session, phase, kind, value_ms)"
                 " VALUES (to_timestamp(%s), %s, %s, %s, %s)",
                 (ts, msg.session, msg.phase, msg.kind, msg.value_ms),
-            )
-        else:
-            await conn.execute(
-                "INSERT INTO questionnaires (ts, session, phase, score)"
-                " VALUES (to_timestamp(%s), %s, %s, %s)",
-                (ts, msg.session, msg.phase, msg.score),
             )
 
 
@@ -132,12 +126,12 @@ async def session_exists(session: str) -> bool:
 
 
 async def session_samples(session: str, since: float | None = None, limit: int = 100000) -> list[dict]:
-    """Vzorky relácie od najstaršej: t (s), phase, hr, head (pozícia a rotácia)."""
+    """Vzorky relácie od najstaršej: t (s), phase, hr a pózy hlavy a oboch ovládačov."""
     since_sql = "AND ts > to_timestamp(%s)" if since is not None else ""
     params = (session, since, limit) if since is not None else (session, limit)
     return await _fetch(
-        "SELECT extract(epoch FROM ts)::float8 AS t, phase, heart_rate AS hr, head FROM samples"
-        f" WHERE session = %s {since_sql} ORDER BY ts LIMIT %s",
+        "SELECT extract(epoch FROM ts)::float8 AS t, phase, heart_rate AS hr, head, left_hand, right_hand"
+        f" FROM samples WHERE session = %s {since_sql} ORDER BY ts LIMIT %s",
         params,
     )
 
@@ -156,10 +150,7 @@ async def session_events(session: str) -> dict:
     events = await _fetch(
         "SELECT extract(epoch FROM ts)::float8 AS t, phase, kind, value_ms FROM events"
         " WHERE session = %s ORDER BY ts", (session,))
-    questionnaires = await _fetch(
-        "SELECT extract(epoch FROM ts)::float8 AS t, phase, score FROM questionnaires"
-        " WHERE session = %s ORDER BY ts", (session,))
-    return {"events": events, "questionnaires": questionnaires}
+    return {"events": events}
 
 
 async def session_summary(session: str) -> dict:

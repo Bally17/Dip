@@ -23,6 +23,19 @@ export function headSpeed(points) {
   return out;
 }
 
+// Rýchlosť posunu bodu v m/s. `getPos` vráti [x, y, z] alebo nič, ak poloha vo vzorke chýba.
+export function pointSpeed(points, getPos) {
+  const out = [];
+  for (let i = 1; i < points.length; i++) {
+    const a = getPos(points[i - 1]);
+    const b = getPos(points[i]);
+    const dt = points[i].t - points[i - 1].t;
+    if (!a || !b || dt <= 0) continue;
+    out.push({ t: points[i].t, speed: Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]) / dt });
+  }
+  return out;
+}
+
 // Pridá nové body za existujúce (bez duplicít) a drží najviac `cap` posledných.
 export function appendPoints(existing, incoming, cap = 6000) {
   const lastT = existing.length ? existing[existing.length - 1].t : -Infinity;

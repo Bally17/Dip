@@ -47,7 +47,7 @@ npm run dev     # http://localhost:5173
 npm test        # testy výpočtov nad časovými radmi
 ```
 
-Adresu API mení premenná `VITE_API_URL` (predvolene http://localhost:8000). Po prihlásení sa vľavo zobrazia relácie, živá relácia sa obnovuje každú sekundu.
+Adresu API mení premenná `VITE_API_URL` (predvolene http://localhost:8000). Po prihlásení sa vľavo zobrazia relácie, živá relácia sa obnovuje každú sekundu. Detail relácie ukazuje odhad stavu, tep, pohyb hlavy, rýchlosť ovládačov, polohu a orientáciu hlavy a oboch ovládačov a súhrn po fázach so začiatkom, koncom, reakčným časom a časmi úloh 1 a 2.
 
 ## Demo bez simulátora
 
