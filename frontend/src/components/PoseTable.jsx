@@ -12,7 +12,7 @@ export default function PoseTable({ point }) {
   ];
   return (
     <div className="table-wrap">
-      <table>
+      <table className="steady">
         <caption>V čase {formatClock(point.t)}. Poloha je v súradniciach simulátora, os y smeruje nahor.</caption>
         <thead>
           <tr>

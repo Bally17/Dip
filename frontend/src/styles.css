@@ -194,6 +194,9 @@ tfoot .range { font-weight: 400; }
 .device dd { margin: 0; font-size: 16px; font-variant-numeric: tabular-nums; }
 .device dd.off { color: var(--negative); font-weight: 700; }
 .analysis .note { margin: 10px 0 8px; }
+/* Stála šírka stĺpcov: hodnoty sa menia s kurzorom v grafe a hlavičky pri tom nesmú skákať. */
+table.steady { table-layout: fixed; min-width: 560px; }
+table.steady th:first-child { width: 24%; }
 caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: 4px; }
 
 /* Prihlásenie */
