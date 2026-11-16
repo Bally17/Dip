@@ -1,6 +1,7 @@
 """Heslá, JWT tokeny a pseudonymizácia identifikátorov."""
 import hashlib
 import hmac
+import math
 import os
 import time
 
@@ -50,3 +51,39 @@ def pseudonymize(value: str, prefix: str) -> str:
 def ingest_key_ok(candidate: str | None) -> bool:
     expected = os.environ.get("INGEST_KEY")
     return bool(expected and candidate and hmac.compare_digest(expected, candidate))
+
+
+class LoginLimiter:
+    """Po max_failures nesprávnych heslách zamkne meno do konca okna od prvého pokusu.
+
+    Počíta sa podľa mena, nie podľa adresy: za reverzným proxy majú všetci klienti rovnakú adresu.
+    Stav je v pamäti jedného procesu, po reštarte servera sa vynuluje.
+    """
+
+    def __init__(self, max_failures: int = 5, window_s: float = 15 * 60, clock=time.monotonic):
+        self.max_failures, self.window_s, self._clock = max_failures, window_s, clock
+        self._failures: dict[str, list[float]] = {}
+
+    def _recent(self, username: str) -> list[float]:
+        key, now = username.lower(), self._clock()
+        recent = [t for t in self._failures.get(key, []) if now - t < self.window_s]
+        if recent:
+            self._failures[key] = recent
+        else:
+            self._failures.pop(key, None)
+        return recent
+
+    def retry_after(self, username: str) -> int:
+        """Sekundy do odomknutia, 0 ak sa dá prihlásiť."""
+        recent = self._recent(username)
+        if len(recent) < self.max_failures:
+            return 0
+        return max(1, math.ceil(recent[0] + self.window_s - self._clock()))
+
+    def failed(self, username: str) -> None:
+        if len(self._failures) > 10_000:  # poistka proti zaplneniu pamäte vymyslenými menami
+            self._failures.clear()
+        self._failures.setdefault(username.lower(), []).append(self._clock())
+
+    def succeeded(self, username: str) -> None:
+        self._failures.pop(username.lower(), None)

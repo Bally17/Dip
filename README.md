@@ -31,9 +31,10 @@ Model sa trénuje v `ml` (`python train.py --data <CEAP-360VR>`) a ukladá do `m
 
 ## Bezpečnosť a údaje
 
-- Prihlásenie cez `POST /auth/login`, JWT na 8 hodín, heslá v argon2. Roly: `admin` (aj mazanie), `researcher` (čítanie).
+- Prihlásenie cez `POST /auth/login`, JWT na 8 hodín, heslá v argon2. Po 5 nesprávnych heslách je meno na 15 minút zamknuté (odpoveď 429). Roly: `admin` (aj mazanie), `researcher` (čítanie).
 - Simulátor sa pripája na `/ws/ingest?key=INGEST_KEY`. Kód účastníka aj id relácie sa pred uložením nahradia pseudonymom (HMAC s `PSEUDO_KEY`).
 - `DELETE /participants/{kód}` zmaže účastníka a všetky jeho dáta.
+- Stránky `/docs` a `/redoc` sú vypnuté. Opis rozhrania vráti `GET /openapi.json` len s platným tokenom.
 - Surové vzorky sa mažú po 365 dňoch, sekundové priemery tepu sú v agregáte `samples_1s`.
 - TLS ukončuje Caddy pred API a frontendom, pozri časť HTTPS.
 

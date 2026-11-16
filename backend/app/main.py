@@ -2,7 +2,7 @@ import logging
 import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
@@ -24,7 +24,8 @@ async def lifespan(_: FastAPI):
     await storage.close_pool()
 
 
-app = FastAPI(title="Dip", lifespan=lifespan)
+# Opis rozhrania je len pre prihlásených, stránky /docs a /redoc sú vypnuté.
+app = FastAPI(title="Dip", lifespan=lifespan, docs_url=None, redoc_url=None, openapi_url=None)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=os.environ.get("CORS_ORIGINS", "http://localhost:5173").split(","),
@@ -33,6 +34,11 @@ app.add_middleware(
 )
 app.include_router(auth.router)
 app.include_router(api.router)
+
+
+@app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(auth.current_user)])
+def openapi_spec():
+    return app.openapi()
 
 
 @app.get("/health")

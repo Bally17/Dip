@@ -7,6 +7,7 @@ from . import security, storage
 
 router = APIRouter()
 _bearer = HTTPBearer(auto_error=False)
+limiter = security.LoginLimiter()
 
 
 class Login(BaseModel):
@@ -16,9 +17,14 @@ class Login(BaseModel):
 
 @router.post("/auth/login")
 async def login(body: Login):
+    wait = limiter.retry_after(body.username)
+    if wait:
+        raise HTTPException(429, "Priveľa nesprávnych pokusov, skús to neskôr", headers={"Retry-After": str(wait)})
     user = await storage.get_user(body.username)
     if not user or not security.verify_password(user["password_hash"], body.password):
+        limiter.failed(body.username)
         raise HTTPException(401, "Nesprávne meno alebo heslo")
+    limiter.succeeded(body.username)
     return {
         "access_token": security.create_token(user["username"], user["role"]),
         "token_type": "bearer",
