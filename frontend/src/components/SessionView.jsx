@@ -3,6 +3,7 @@ import { api } from "../api.js";
 import { analyzePhases, analyzeSession, finding, peak, shareAbove, summaryCsv } from "../lib/analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "../lib/series.js";
 import AnalysisTable from "./AnalysisTable.jsx";
+import DevicePanel from "./DevicePanel.jsx";
 import PoseTable from "./PoseTable.jsx";
 import RiskGauge from "./RiskGauge.jsx";
 import { isLive } from "./SessionRail.jsx";
@@ -26,6 +27,7 @@ function useSession(session, live) {
   const [points, setPoints] = useState([]);
   const [risk, setRisk] = useState([]);
   const [summary, setSummary] = useState({ events: [] });
+  const [device, setDevice] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const lastT = useRef(null);
@@ -37,6 +39,8 @@ function useSession(session, live) {
     setPoints([]);
     setRisk([]);
     setError("");
+    setDevice(null);
+    api.device(id).then((d) => !cancelled && setDevice(d)).catch(() => {});
     Promise.all([api.samples(id), api.riskHistory(id).catch(() => []), api.summary(id)])
       .then(([pts, hist, sum]) => {
         if (cancelled) return;
@@ -64,6 +68,7 @@ function useSession(session, live) {
           if (probabilities) setRisk((old) => appendPoints(old, [{ t: lastT.current, ...probabilities }], 3000));
         }
         if (++ticks.current % 5 === 0) setSummary(await api.summary(id));
+        if (ticks.current % 2 === 0) setDevice(await api.device(id));
         setError("");
       } catch (e) {
         setError(`Spojenie s API vypadlo: ${e.message}`);
@@ -72,7 +77,7 @@ function useSession(session, live) {
     return () => clearInterval(timer);
   }, [id, live]);
 
-  return { points, risk, summary, error, loading };
+  return { points, risk, summary, device, error, loading };
 }
 
 function Stat({ label, value, unit }) {
@@ -88,7 +93,7 @@ export default function SessionView({ session, user, onErased }) {
   const [live, setLive] = useState(() => Boolean(isLive(session)));
   const [wholeSession, setWholeSession] = useState(false);
   const [hoverT, setHoverT] = useState(null);
-  const { points, risk, summary, error, loading } = useSession(session, live);
+  const { points, risk, summary, device, error, loading } = useSession(session, live);
 
   useEffect(() => setLive(Boolean(isLive(session))), [session.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -218,6 +223,11 @@ export default function SessionView({ session, user, onErased }) {
             </div>
             <RiskGauge fear={hasFear ? gaugeAt("fear") : null} arousal={gaugeAt("arousal")} />
           </div>
+
+          <section className="analysis">
+            <h2>Prístroj</h2>
+            <DevicePanel state={device} />
+          </section>
 
           <section className="analysis">
             <h2>Poloha a orientácia</h2>

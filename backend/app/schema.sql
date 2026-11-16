@@ -29,6 +29,9 @@ CREATE TABLE IF NOT EXISTS samples (
 
 SELECT create_hypertable('samples', 'ts', if_not_exists => TRUE);
 
+-- Čas prijatia na serveri. Staršie vzorky ho nemajú.
+ALTER TABLE samples ADD COLUMN IF NOT EXISTS received_at timestamptz;
+
 CREATE INDEX IF NOT EXISTS samples_session_ts ON samples (session, ts DESC);
 
 CREATE TABLE IF NOT EXISTS events (

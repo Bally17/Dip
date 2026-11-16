@@ -2,11 +2,12 @@
 import csv
 import json
 import io
+import time
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 
-from . import inference, storage
+from . import device, inference, storage
 from .auth import admin_only, current_user
 from .features import WINDOW_S
 
@@ -66,6 +67,13 @@ async def sessions(participant: str | None = None):
 async def summary(session: str):
     await _require_session(session)
     return {"session": session, **await storage.session_summary(session), **await storage.session_events(session)}
+
+
+@router.get("/sessions/{session}/device")
+async def device_state(session: str):
+    """Stav prenosu: skutočná frekvencia vzoriek, výpadky, oneskorenie a čas od poslednej správy."""
+    await _require_session(session)
+    return {"session": session, **device.stats(await storage.arrival_times(session), time.time())}
 
 
 @router.get("/sessions/{session}/samples")

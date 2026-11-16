@@ -77,8 +77,8 @@ async def _save_once(msg: Sample | Event) -> None:
         ts = msg.t / 1000.0
         if isinstance(msg, Sample):
             await conn.execute(
-                "INSERT INTO samples (ts, session, phase, heart_rate, head, left_hand, right_hand)"
-                " VALUES (to_timestamp(%s), %s, %s, %s, %s, %s, %s)",
+                "INSERT INTO samples (ts, session, phase, heart_rate, head, left_hand, right_hand, received_at)"
+                " VALUES (to_timestamp(%s), %s, %s, %s, %s, %s, %s, clock_timestamp())",
                 (ts, msg.session, msg.phase, msg.heart_rate, _pose(msg.head), _pose(msg.left), _pose(msg.right)),
             )
         else:
@@ -144,6 +144,15 @@ async def recent_samples(session: str, seconds: float) -> list[dict]:
         (session, session, seconds),
     )
     return rows
+
+
+async def arrival_times(session: str, limit: int = 100000) -> list[dict]:
+    """Čas vzorky a čas jej prijatia na serveri (s), od najstaršej. Staršie vzorky majú received None."""
+    return await _fetch(
+        "SELECT extract(epoch FROM ts)::float8 AS t, extract(epoch FROM received_at)::float8 AS received"
+        " FROM samples WHERE session = %s ORDER BY ts LIMIT %s",
+        (session, limit),
+    )
 
 
 async def session_events(session: str) -> dict:

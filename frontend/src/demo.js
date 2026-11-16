@@ -57,6 +57,10 @@ export const demoApi = {
   ],
   samples: async (_id, since) => (since == null ? points : points.filter((p) => p.t > since)),
   summary: async () => ({ events }),
+  device: async () => ({
+    samples: points.length, rate_hz: 10, gaps: 1, longest_gap_s: 1.2, delay_ms: 18, delay_max_ms: 240,
+    last_message_age_s: 0.4, connected: true,
+  }),
   risk: async () => ({ probabilities: risk[risk.length - 1] }),
   riskHistory: async () => risk,
   erase: async () => ({}),
