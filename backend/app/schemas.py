@@ -23,7 +23,8 @@ class Pose(BaseModel):
 
 
 class _Base(BaseModel):
-    participant: str = Field(min_length=1, max_length=64)
+    # Pri spojení s tokenom headsetu sa účastník určí z tokenu a toto pole sa neberie do úvahy.
+    participant: str = Field(default="-", min_length=1, max_length=64)
     session: str = Field(min_length=1, max_length=64)
     t: int = Field(ge=0, description="Unix čas v milisekundách")
     phase: int = Field(ge=0)

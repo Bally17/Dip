@@ -10,6 +10,7 @@ import math
 import os
 import random
 import time
+import urllib.request
 
 from websockets.asyncio.client import connect
 
@@ -34,11 +35,24 @@ def pose(t: float, phase: int, shift: float = 0.0) -> dict:
     }
 
 
-async def run_session(url: str, seconds: int, hz: int, participant: str) -> None:
+def pair(api: str, code: str) -> str:
+    """Vymení párovací kód z webu za token headsetu, tak ako to spraví simulátor."""
+    request = urllib.request.Request(
+        f"{api}/devices/pair", data=json.dumps({"code": code}).encode(), headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(request, timeout=10) as response:
+        return json.load(response)["token"]
+
+
+async def run_session(url: str, seconds: int, hz: int, participant: str, token: str | None = None) -> None:
     session = f"{participant}-{int(time.time())}"
     start = time.time()
     task1_sent = False
     async with connect(url) as ws:
+        if token:
+            # Headset člena sa preukáže prvou správou, token nejde v adrese.
+            await ws.send(json.dumps({"type": "auth", "token": token}))
+            if not json.loads(await ws.recv()).get("ok"):
+                raise SystemExit("Server token odmietol")
         for i in range(seconds * hz):
             now = time.time()
             phase = min(int((now - start) // max(seconds / 3, 1)), 2)
@@ -72,10 +86,16 @@ async def main() -> None:
     ap.add_argument("--hz", type=int, default=10)
     ap.add_argument("--participant", default="P01")
     ap.add_argument("--loop", action="store_true", help="po skončení začať novú reláciu")
+    ap.add_argument("--api", default="http://localhost:8000", help="adresa REST API pre párovanie")
+    ap.add_argument("--pair", metavar="KÓD", help="párovací kód z webu; posiela potom ako headset člena")
+    ap.add_argument("--token", help="token headsetu z predošlého párovania")
     args = ap.parse_args()
-    url = f"{args.url}?key={os.environ.get('INGEST_KEY', '')}"
+    token = args.token or (pair(args.api, args.pair) if args.pair else None)
+    if args.pair:
+        print(f"Spárované. Token na ďalšie spustenie: --token {token}")
+    url = args.url if token else f"{args.url}?key={os.environ.get('INGEST_KEY', '')}"
     while True:
-        await run_session(url, args.seconds, args.hz, args.participant)
+        await run_session(url, args.seconds, args.hz, args.participant, token)
         if not args.loop:
             break
 

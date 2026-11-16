@@ -1,5 +1,6 @@
 import asyncio
 import os
+import secrets
 from datetime import timedelta
 from pathlib import Path
 
@@ -120,6 +121,63 @@ async def delete_user(username: str) -> bool:
     async with _pool.connection() as conn:
         cur = await conn.execute("DELETE FROM users WHERE username = %s", (username,))
         return cur.rowcount > 0
+
+
+async def save_pairing_code(code_hash: str, owner: str, expires_at: float) -> None:
+    """Uloží nový kód člena a zruší jeho staršie kódy."""
+    async with _pool.connection() as conn:
+        await conn.execute("DELETE FROM pairing_codes WHERE owner = %s OR expires_at < now() - INTERVAL '1 day'", (owner,))
+        await conn.execute(
+            "INSERT INTO pairing_codes (code_hash, owner, expires_at) VALUES (%s, %s, to_timestamp(%s))",
+            (code_hash, owner, expires_at),
+        )
+
+
+async def use_pairing_code(code_hash: str, now: float) -> str | None:
+    """Označí platný kód za použitý a vráti jeho vlastníka. Jedným príkazom, aby sa kód nedal použiť dvakrát."""
+    async with _pool.connection() as conn:
+        cur = await conn.execute(
+            "UPDATE pairing_codes SET used_at = now() WHERE code_hash = %s AND used_at IS NULL"
+            " AND expires_at > to_timestamp(%s) RETURNING owner",
+            (code_hash, now),
+        )
+        row = await cur.fetchone()
+        return row["owner"] if row else None
+
+
+async def create_device(owner: str, token_hash: str) -> str:
+    device_id = secrets.token_hex(8)
+    async with _pool.connection() as conn:
+        await conn.execute(
+            "INSERT INTO devices (id, owner, token_hash) VALUES (%s, %s, %s)", (device_id, owner, token_hash))
+    return device_id
+
+
+async def device_by_token(token_hash: str) -> dict | None:
+    rows = await _fetch(
+        "SELECT id, owner FROM devices WHERE token_hash = %s AND revoked_at IS NULL", (token_hash,))
+    return rows[0] if rows else None
+
+
+async def list_devices(owner: str) -> list[dict]:
+    return await _fetch(
+        "SELECT id, extract(epoch FROM paired_at)::float8 AS paired_at,"
+        " extract(epoch FROM last_seen)::float8 AS last_seen"
+        " FROM devices WHERE owner = %s AND revoked_at IS NULL ORDER BY paired_at DESC", (owner,))
+
+
+async def revoke_device(device_id: str, owner: str) -> bool:
+    async with _pool.connection() as conn:
+        cur = await conn.execute(
+            "UPDATE devices SET revoked_at = now() WHERE id = %s AND owner = %s AND revoked_at IS NULL",
+            (device_id, owner),
+        )
+        return cur.rowcount > 0
+
+
+async def touch_device(device_id: str) -> None:
+    async with _pool.connection() as conn:
+        await conn.execute("UPDATE devices SET last_seen = now() WHERE id = %s", (device_id,))
 
 
 async def session_participant(session: str) -> str | None:
