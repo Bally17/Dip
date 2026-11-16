@@ -104,7 +104,7 @@ export default function TimeChart({
           </text>
         ))}
         {series.map((s) => (
-          <path key={s.key} d={path(data, s.key, x, y)} fill="none" stroke={s.color} strokeWidth="2" strokeLinejoin="round" />
+          <path key={s.key} d={path(data, s.key, x, y)} fill="none" stroke={s.color} strokeWidth={s.color === "var(--accent)" ? 3 : 2} strokeLinejoin="round" />
         ))}
         {markers.filter((m) => m.t >= x0 && m.t <= x1).map((m) => (
           <path key={m.t} d={`M${x(m.t) - 4},${height - M.bottom} l4,-7 l4,7 z`} className="marker">

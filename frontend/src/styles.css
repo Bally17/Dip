@@ -1,26 +1,32 @@
-/* Štýl: achromatic ledger. Rám je z atramentu a šedej, jediná farba (--accent) patrí hlavným dátam, odhadu strachu.
+/* Paleta: oranžová #FAA916, biela #FBFFFE, šedá #6D676E. Ostatné tóny sú odvodené od šedej.
+   Oranžová je len na plochách a čiarach s tmavým textom, na bielej nie je ako text čitateľná (kontrast 1,9 : 1).
+   Bočný panel je šedý s bielym textom, oranžová patrí hlavným dátam (odhad strachu) a hlavnému tlačidlu.
    Rozloženie: sidebar 240 px + plátno s okrajom 32 px; hlavný stĺpec a výškomer sa delia o šírku plátna. */
 :root {
-  --ground: #f2f4f7;
-  --surface: #ffffff;
-  --active: #e9ebee;
-  --border: #e3e6ea;
-  --rule: #eef0f2;
-  --control: #d1d5db;
-  --text: #111111;
-  --muted: #5f6368;
-  --primary: #1d1f20;
-  --accent: #1d5fbf;
-  --comparison: #7b828b;
+  --orange: #faa916;
+  --white: #fbfffe;
+  --grey: #6d676e;
+  --ink: #2a272b;
+  --ground: #f1f1f1;
+  --surface: var(--white);
+  --active: #e6e4e6;
+  --border: #dcd9dc;
+  --rule: #ebe9eb;
+  --control: #c3bfc4;
+  --text: var(--ink);
+  --muted: var(--grey);
+  --primary: var(--orange);
+  --accent: var(--orange);
+  --comparison: var(--grey);
   --negative: #c4242a;
-  --grid: #e5e7ea;
+  --grid: #e6e4e6;
   --radius-card: 8px;
   --radius-control: 6px;
   --font: "Atkinson Hyperlegible", system-ui, sans-serif;
   color-scheme: light;
 }
 
-::selection { background: rgba(29, 95, 191, 0.18); }
+::selection { background: rgba(250, 169, 22, 0.35); }
 * { scrollbar-color: var(--control) transparent; scrollbar-width: thin; }
 input { caret-color: var(--accent); }
 
@@ -48,12 +54,12 @@ button {
   cursor: pointer;
 }
 button:hover { background: var(--active); }
-button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 button:disabled { opacity: 0.6; cursor: progress; }
-button.primary { background: var(--primary); color: #fff; border-color: var(--primary); }
-button.primary:hover { background: #000; }
+button.primary { background: var(--primary); color: var(--ink); border-color: var(--primary); font-weight: 700; }
+button.primary:hover { background: #e39a0c; }
 button.quiet { background: var(--active); border-color: transparent; }
-button.quiet:hover { background: #dfe2e6; }
+button.quiet:hover { background: #d9d6d9; }
 button.link { background: none; border: 0; padding: 0 4px; color: var(--negative); }
 button.link:hover { text-decoration: underline; background: none; }
 .chip[aria-pressed="true"] { background: var(--active); border-color: var(--text); }
@@ -73,9 +79,16 @@ button.link:hover { text-decoration: underline; background: none; }
   top: 0;
   height: 100vh;
   overflow-y: auto;
-  border-right: 1px solid var(--border);
   padding: 20px 8px 16px;
+  background: var(--grey);
+  /* Na šedom paneli sa tokeny textu a čiar prepnú na biele. */
+  --text: var(--white);
+  --muted: rgba(251, 255, 254, 0.86);
+  --border: rgba(251, 255, 254, 0.28);
+  --rule: rgba(251, 255, 254, 0.12);
+  color: var(--text);
 }
+.rail button:focus-visible { outline-color: var(--white); }
 .brand { display: flex; align-items: center; gap: 10px; padding: 0 12px 4px; }
 .brand svg { flex: none; }
 .brand strong { font-size: 16px; }
@@ -98,13 +111,14 @@ button.link:hover { text-decoration: underline; background: none; }
   padding: 6px 12px;
 }
 .rail-item:hover { background: var(--rule); }
-.rail-item.active { background: var(--active); }
+.rail-item.active { background: var(--orange); --text: var(--ink); --muted: var(--ink); color: var(--ink); }
 .rail-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rail-meta, .rail-count { color: var(--muted); font-size: 13px; }
 .rail-meta { text-align: right; }
-.rail-meta.live { color: var(--accent); font-weight: 700; }
+.rail-meta.live { background: var(--orange); color: var(--ink); font-weight: 700; padding: 0 6px; border-radius: 9px; }
+.rail-item.active .rail-meta.live { background: var(--ink); color: var(--white); }
 .rail-user { margin-top: auto; padding: 12px 12px 0; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; color: var(--muted); font-size: 13px; }
-.rail-user button { height: 28px; font-size: 13px; }
+.rail-user button { height: 28px; font-size: 13px; color: var(--ink); }
 
 .view { padding: 28px 32px 48px; min-width: 0; }
 .view-head { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; align-items: flex-start; }
@@ -134,12 +148,12 @@ button.link:hover { text-decoration: underline; background: none; }
 .tick { fill: var(--muted); font-size: 12px; font-family: var(--font); }
 .cursor { stroke: var(--text); stroke-width: 1; stroke-dasharray: 3 3; }
 .marker { fill: var(--muted); opacity: 0.5; }
-.band-0 { fill: rgba(17, 17, 17, 0.025); }
-.band-1 { fill: rgba(17, 17, 17, 0.06); }
+.band-0 { fill: rgba(109, 103, 110, 0.04); }
+.band-1 { fill: rgba(109, 103, 110, 0.12); }
 .phase-key { display: flex; flex-wrap: wrap; gap: 4px 20px; margin: 8px 0 0 46px; font-size: 13px; color: var(--muted); }
 .swatch { display: inline-block; width: 12px; height: 12px; margin-right: 6px; vertical-align: -2px; border: 1px solid var(--border); border-radius: 2px; }
-.swatch.band-0 { background: rgba(17, 17, 17, 0.025); }
-.swatch.band-1 { background: rgba(17, 17, 17, 0.1); }
+.swatch.band-0 { background: rgba(109, 103, 110, 0.04); }
+.swatch.band-1 { background: rgba(109, 103, 110, 0.16); }
 
 /* Výškomer */
 .gauge { padding: 16px 16px 14px; border-left: 1px solid var(--rule); align-self: start; position: sticky; top: 0; }
@@ -188,12 +202,12 @@ caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom
 .login-form .brand { padding: 0; }
 .login-form p { color: var(--muted); }
 .login-form label { display: grid; gap: 4px; font-weight: 700; font-size: 13px; }
-.login-form input { font: inherit; height: 36px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-control); background: #fff; }
+.login-form input { font: inherit; height: 36px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--white); }
 .login-form button { height: 36px; font-weight: 700; }
 
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
-  .rail { position: static; height: auto; border-right: 0; border-bottom: 1px solid var(--border); padding-bottom: 8px; }
+  .rail { position: static; height: auto; padding-bottom: 8px; }
   .rail ul { display: flex; overflow-x: auto; }
   .rail-item { min-width: 168px; }
   .rail-user { margin-top: 8px; }
