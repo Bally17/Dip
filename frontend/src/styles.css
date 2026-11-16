@@ -175,6 +175,11 @@ tfoot th, tfoot td { border-bottom: 0; border-top: 1px solid var(--border); font
 tfoot .range { font-weight: 400; }
 .analysis-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .analysis-head .actions { display: flex; gap: 8px; }
+.device { display: flex; flex-wrap: wrap; gap: 8px 40px; margin: 4px 0 0; }
+.device dt { color: var(--muted); font-size: 13px; }
+.device dd { margin: 0; font-size: 16px; font-variant-numeric: tabular-nums; }
+.device dd.off { color: var(--negative); font-weight: 700; }
+.analysis .note { margin: 10px 0 8px; }
 caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: 4px; }
 
 /* Prihlásenie */

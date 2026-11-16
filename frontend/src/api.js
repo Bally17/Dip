@@ -67,6 +67,7 @@ const realApi = {
   samples: (id, since) =>
     request(`/sessions/${id}/samples?max_points=2500${since != null ? `&since=${since}` : ""}`),
   summary: (id) => request(`/sessions/${id}/summary`),
+  device: (id) => request(`/sessions/${id}/device`),
   risk: (id) => request(`/sessions/${id}/risk`),
   riskHistory: (id) => request(`/sessions/${id}/risk/history`),
   erase: (code) => request(`/participants/${code}`, { method: "DELETE" }),
