@@ -1,5 +1,6 @@
 import asyncio
 import os
+from datetime import timedelta
 from pathlib import Path
 
 from psycopg.errors import DeadlockDetected
@@ -171,13 +172,21 @@ async def session_summary(session: str) -> dict:
 
 async def delete_participant(code: str) -> bool:
     """Zmaže účastníka a všetky jeho dáta (kaskádovo). Vráti True, ak existoval."""
+    span = (await _fetch(
+        "SELECT min(x.ts) AS lo, max(x.ts) AS hi FROM samples x"
+        " JOIN sessions s ON s.id = x.session WHERE s.participant = %s", (code,)))[0]
     async with _pool.connection() as conn:
         cur = await conn.execute("DELETE FROM participants WHERE code = %s", (code,))
         existed = cur.rowcount > 0
-    if existed:
+    if existed and span["lo"] is not None:
         # Agregát si pamätá zmazané riadky, kým sa neobnoví. Obnova nejde v transakcii.
+        # Obnovuje sa len úsek zmazaných vzoriek, obnova celej histórie trvala minúty.
+        # Obnovia sa len celé sekundové úseky vnútri okna, preto začiatok zaokrúhľujeme nadol.
         async with _pool.connection() as conn:
             await conn.set_autocommit(True)
-            await conn.execute("CALL refresh_continuous_aggregate('samples_1s', NULL, NULL)")
+            await conn.execute(
+                "CALL refresh_continuous_aggregate('samples_1s', %s::timestamptz, %s::timestamptz)",
+                (span["lo"].replace(microsecond=0), span["hi"] + timedelta(seconds=1)),
+            )
             await conn.set_autocommit(False)
     return existed

@@ -35,7 +35,7 @@ Model sa trénuje v `ml` (`python train.py --data <CEAP-360VR>`) a ukladá do `m
 - Simulátor sa pripája na `/ws/ingest?key=INGEST_KEY`. Kód účastníka aj id relácie sa pred uložením nahradia pseudonymom (HMAC s `PSEUDO_KEY`).
 - `DELETE /participants/{kód}` zmaže účastníka a všetky jeho dáta.
 - Surové vzorky sa mažú po 365 dňoch, sekundové priemery tepu sú v agregáte `samples_1s`.
-- TLS rieši reverzný proxy pred API a frontendom, v tomto repozitári nie je.
+- TLS ukončuje Caddy pred API a frontendom, pozri časť HTTPS.
 
 ## Frontend
 
@@ -55,3 +55,19 @@ docker compose exec -d api python -m tools.mock_sender --seconds 180 --loop
 ```
 
 Mock sender posiela vymyslené dáta, slúžia len na ukážku rozhrania.
+
+## HTTPS
+
+```
+docker compose --profile tls up -d --build
+```
+
+Služba `web` (Caddy) zostaví frontend, podáva ho na https://localhost a požiadavky na `/api/*` posiela na API. Simulátor sa potom pripája na `wss://<adresa>/api/ws/ingest?key=INGEST_KEY`. Pre localhost si Caddy vystaví vlastný certifikát, prehliadač ho preto označí ako nedôveryhodný. Pri verejnej doméne nastav `SITE_ADDRESS=moja.domena.sk` v `.env` a certifikát sa získa z Let's Encrypt. Porty 8000 a 5432 pri verejnom nasadení nezverejňuj. Caddy odpovedá len na adresu zo `SITE_ADDRESS`. Ak sa má Quest pripojiť cez miestnu sieť, nastav ju na meno alebo IP servera a certifikát Caddy musí zariadenie prijať, inak použi verejnú doménu.
+
+## Meranie príjmu a záťaže
+
+```
+docker compose run --rm --no-deps api python -m tools.bench --sessions 1 5 10 25 50 --seconds 60
+```
+
+Nástroj otvorí zadaný počet relácií, v každej posiela 25 vzoriek za sekundu a meria čas od odoslania po potvrdenie. Po každej úrovni porovná odoslané časové značky s uloženými (stratené, zdvojené) a testovacie dáta zmaže. Počas merania jeden klient číta vzorky a odhad raz za sekundu ako frontend. Voľba `--out súbor.json` uloží celé výsledky.

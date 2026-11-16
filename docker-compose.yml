@@ -26,5 +26,20 @@ services:
       db:
         condition: service_healthy
 
+  # HTTPS pred API a frontendom: docker compose --profile tls up -d --build
+  web:
+    profiles: ["tls"]
+    build: ./frontend
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      - api
+
 volumes:
   db-data:
+  caddy-data:
