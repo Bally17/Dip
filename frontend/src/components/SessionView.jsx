@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
-import { analyzePhases, finding, peak, shareAbove } from "../lib/analysis.js";
+import { analyzePhases, analyzeSession, finding, peak, shareAbove, summaryCsv } from "../lib/analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "../lib/series.js";
 import AnalysisTable from "./AnalysisTable.jsx";
 import PoseTable from "./PoseTable.jsx";
@@ -12,6 +12,13 @@ import TimeChart from "./TimeChart.jsx";
 const COLORS = { fear: "var(--accent)", arousal: "var(--comparison)", ink: "var(--text)" };
 const LIVE_WINDOW_S = 90;
 const phaseName = (p) => `Fáza ${p + 1}`;
+
+// Uloží text ako súbor v prehliadači.
+function saveFile(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  Object.assign(document.createElement("a"), { href: url, download: name }).click();
+  URL.revokeObjectURL(url);
+}
 
 // Načíta reláciu a v živom režime každú sekundu dotiahne nové vzorky a odhad.
 function useSession(session, live) {
@@ -103,6 +110,8 @@ export default function SessionView({ session, user, onErased }) {
   );
   const bands = useMemo(() => phaseSegments(rel), [rel]);
   const analysis = useMemo(() => analyzePhases(rel, relRisk, events), [rel, relRisk, events]);
+  const total = useMemo(() => analyzeSession(rel, relRisk, events), [rel, relRisk, events]);
+  const summaryRows = total ? [...analysis, total] : analysis;
 
   const end = rel.length ? rel[rel.length - 1].t : 0;
   const follow = live && !wholeSession;
@@ -216,8 +225,14 @@ export default function SessionView({ session, user, onErased }) {
           </section>
 
           <section className="analysis">
-            <h2>Súhrn po fázach</h2>
-            <AnalysisTable rows={analysis} phaseName={phaseName} />
+            <div className="analysis-head">
+              <h2>Súhrn po fázach</h2>
+              <div className="actions">
+                <button className="quiet" onClick={() => saveFile(`${session.id}-suhrn.csv`, summaryCsv(summaryRows, phaseName), "text/csv")}>Súhrn CSV</button>
+                <button className="quiet" onClick={() => saveFile(`${session.id}-suhrn.json`, JSON.stringify(summaryRows, null, 2), "application/json")}>Súhrn JSON</button>
+              </div>
+            </div>
+            <AnalysisTable rows={analysis} total={total} phaseName={phaseName} />
           </section>
         </>
       )}

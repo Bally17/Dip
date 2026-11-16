@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzePhases, finding, peak, shareAbove } from "./analysis.js";
+import { analyzePhases, analyzeSession, finding, peak, shareAbove, summaryCsv } from "./analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "./series.js";
 
 const pt = (t, phase = 0, extra = {}) => ({ t, phase, hr: 80, pitch: 0, yaw: 0, ...extra });
@@ -110,5 +110,53 @@ describe("analyzePhases: časy fáz a úloh", () => {
     expect([second.startT, second.endT]).toEqual([11, 30]);
     expect([first.task1Ms, first.task2Ms]).toEqual([8200, null]);
     expect([second.task1Ms, second.task2Ms]).toEqual([null, 15400]);
+  });
+});
+
+describe("analyzePhases: minimum a maximum", () => {
+  const points = [
+    pt(0, 0, { hr: 70 }), pt(1, 0, { hr: 74, yaw: 10 }), pt(2, 0, { hr: 66, yaw: 40 }),
+    pt(3, 1, { hr: null, yaw: 40 }), pt(4, 1, { hr: null, yaw: 40 }),
+  ];
+  const events = [
+    { t: 1, phase: 0, kind: "reaction_time", value_ms: 300 },
+    { t: 2, phase: 0, kind: "reaction_time", value_ms: 500 },
+    { t: 2, phase: 0, kind: "reaction_time", value_ms: 700 },
+  ];
+
+  it("vráti najmenší a najväčší tep, rýchlosť hlavy a reakčný čas vo fáze", () => {
+    const [first] = analyzePhases(points, [], events);
+    expect([first.hrMin, first.hrMean, first.hrMax]).toEqual([66, 70, 74]);
+    expect([first.headSpeedMin, first.headSpeedMean, first.headSpeedMax]).toEqual([10, 20, 30]);
+    expect([first.reactionMin, first.reactionMs, first.reactionMax]).toEqual([300, 500, 700]);
+  });
+
+  it("fáza bez tepu a bez reakcie má prázdne hodnoty", () => {
+    const second = analyzePhases(points, [], events)[1];
+    expect([second.hrMin, second.hrMean, second.hrMax]).toEqual([null, null, null]);
+    expect([second.reactionMin, second.reactionMs, second.reactionMax]).toEqual([null, null, null]);
+  });
+
+  it("súhrn za celú reláciu počíta zo všetkých fáz", () => {
+    const total = analyzeSession(points, [], [...events, { t: 4, phase: 1, kind: "reaction_time", value_ms: 100 }]);
+    expect(total).toMatchObject({ phase: null, startT: 0, endT: 4, durationS: 4, hrMin: 66, hrMax: 74, reactionMin: 100, reactionMax: 700 });
+    expect(total.reactionMs).toBe(400);
+    expect(total.headSpeedMax).toBe(30);
+    expect(analyzeSession([], [], [])).toBeNull();
+  });
+});
+
+describe("summaryCsv", () => {
+  it("zapíše fázy aj celú reláciu, prázdne hodnoty nechá prázdne", () => {
+    const points = [pt(0, 0, { hr: 70 }), pt(2, 0, { hr: 80 }), pt(3, 1, { hr: null }), pt(4, 1, { hr: null })];
+    const rows = [...analyzePhases(points, [], []), analyzeSession(points, [], [])];
+    const lines = summaryCsv(rows, (p) => `Fáza ${p + 1}`).split("\n");
+    expect(lines[0]).toBe(
+      "faza,zaciatok_s,koniec_s,trvanie_s,tep_min,tep_priemer,tep_max,hlava_min,hlava_priemer,hlava_max,strach_priemer,reakcia_min_ms,reakcia_priemer_ms,reakcia_max_ms,uloha1_ms,uloha2_ms",
+    );
+    expect(lines[1]).toBe("Fáza 1,0,2,2,70,75,80,0,0,0,,,,,,");
+    expect(lines[2]).toBe("Fáza 2,3,4,1,,,,0,0,0,,,,,,");
+    expect(lines[3].startsWith("Celá relácia,0,4,4,70,75,80,")).toBe(true);
+    expect(lines).toHaveLength(4);
   });
 });
