@@ -48,6 +48,12 @@ events.push(
 
 const iso = (offset) => new Date((T0 + offset) * 1000).toISOString();
 
+const demoUsers = [
+  { id: "demo", name: "demo", role: "admin" },
+  { id: "p_a1f3c9d207be4e58", name: "p_a1f3c9d207be4e58", role: "member" },
+  { id: "p_7c20be915d3a64f1", name: "p_7c20be915d3a64f1", role: "member" },
+];
+
 export const demoApi = {
   login: async () => ({ access_token: "demo", role: "admin" }),
   me: async () => ({ username: "demo", role: "admin" }),
@@ -64,5 +70,16 @@ export const demoApi = {
   risk: async () => ({ probabilities: risk[risk.length - 1] }),
   riskHistory: async () => risk,
   erase: async () => ({}),
+  users: async () => [...demoUsers],
+  createUser: async (_username, _password, role) => {
+    const id = `p_${Math.random().toString(16).slice(2, 18)}`;
+    const made = { id, name: id, role };
+    demoUsers.push(made);
+    return made;
+  },
+  deleteUser: async (id) => {
+    demoUsers.splice(demoUsers.findIndex((u) => u.id === id), 1);
+    return { deleted: id };
+  },
   download: async () => {},
 };

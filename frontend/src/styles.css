@@ -199,6 +199,16 @@ table.steady { table-layout: fixed; min-width: 560px; }
 table.steady th:first-child { width: 24%; }
 caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom: 4px; }
 
+/* Formuláre a jednoduché tabuľky na stránkach správy */
+.rail-pages { margin-top: 20px; }
+.inline-form { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+.inline-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
+.inline-form input, .inline-form select { font: inherit; color: var(--text); height: 32px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--white); min-width: 180px; }
+select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+table.plain th, table.plain td { text-align: left; }
+table.plain td:last-child { text-align: right; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
 /* Prihlásenie */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
 .login-form { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-card); padding: 28px; width: min(360px, 100%); display: grid; gap: 16px; }
