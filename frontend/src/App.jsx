@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
 import { api, hasToken, setToken, setUnauthorizedHandler } from "./api.js";
+import { can } from "./lib/roles.js";
+
+// V ukážke (?demo) sa dá stránka otvoriť priamo, napr. ?demo=member&page=device.
+const startPage = (import.meta.env.DEV && new URLSearchParams(window.location.search).get("page")) || "sessions";
+import DeviceView from "./components/DeviceView.jsx";
 import Login from "./components/Login.jsx";
 import SessionRail from "./components/SessionRail.jsx";
 import SessionView from "./components/SessionView.jsx";
@@ -10,7 +15,7 @@ export default function App() {
   const [checking, setChecking] = useState(hasToken());
   const [sessions, setSessions] = useState([]);
   const [selected, setSelected] = useState(null);
-  const [page, setPage] = useState("sessions");
+  const [page, setPage] = useState(startPage);
   const [error, setError] = useState("");
 
   const logout = useCallback(() => {
@@ -60,8 +65,10 @@ export default function App() {
         page={page} onPage={setPage}
         user={user} onLogout={logout} error={error}
       />
-      {page === "users" ? (
+      {page === "users" && can(user.role, "manageUsers") ? (
         <UsersView />
+      ) : page === "device" && can(user.role, "pairDevice") ? (
+        <DeviceView user={user} onAccountDeleted={logout} />
       ) : session ? (
         <SessionView
           key={session.id} session={session} user={user}
@@ -73,7 +80,14 @@ export default function App() {
       ) : (
         <main className="view">
           <h1>Výškomer</h1>
-          <p className="empty">Vyber reláciu vľavo. Keď simulátor začne posielať dáta, objaví sa tu živý prenos.</p>
+          {can(user.role, "pairDevice") && sessions.length === 0 ? (
+            <>
+              <p className="empty">Zatiaľ nemáš žiadne meranie. Najprv spáruj svoj Oculus, potom spusti simulátor.</p>
+              <button className="primary" onClick={() => setPage("device")}>Pripojiť Oculus</button>
+            </>
+          ) : (
+            <p className="empty">Vyber reláciu vľavo. Keď simulátor začne posielať dáta, objaví sa tu živý prenos.</p>
+          )}
         </main>
       )}
     </div>

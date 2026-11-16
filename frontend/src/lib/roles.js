@@ -4,6 +4,7 @@ const RIGHTS = {
   manageUsers: ["admin"],
   eraseParticipant: ["admin"],
   pairDevice: ["member"],
+  eraseOwnData: ["member"],
 };
 
 export const roleLabel = (role) => LABELS[role] ?? role;

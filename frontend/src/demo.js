@@ -48,19 +48,34 @@ events.push(
 
 const iso = (offset) => new Date((T0 + offset) * 1000).toISOString();
 
+// Rola v ukážke: ?demo je admin, ?demo=member je člen.
+const demoRole = new URLSearchParams(globalThis.location?.search ?? "").get("demo") === "member" ? "member" : "admin";
+const ME = "p_a1f3c9d207be4e58";
+const demoDevices = [{ id: "d1", paired_at: T0 - 3600, last_seen: T0 + 60, connected: true }];
+
 const demoUsers = [
   { id: "demo", name: "demo", role: "admin" },
   { id: "p_a1f3c9d207be4e58", name: "p_a1f3c9d207be4e58", role: "member" },
   { id: "p_7c20be915d3a64f1", name: "p_7c20be915d3a64f1", role: "member" },
 ];
 
+const demoSessions = () => [
+  { id: "s_demo_live", participant: "p_a1f3c9d207be4e58", started_at: iso(0), samples: points.length, last_ts: new Date().toISOString() },
+  { id: "s_demo_old", participant: "p_7c20be915d3a64f1", started_at: iso(-86400), samples: 4210, last_ts: iso(-86000) },
+];
+
 export const demoApi = {
-  login: async () => ({ access_token: "demo", role: "admin" }),
-  me: async () => ({ username: "demo", role: "admin" }),
-  sessions: async () => [
-    { id: "s_demo_live", participant: "p_a1f3c9d207be4e58", started_at: iso(0), samples: points.length, last_ts: new Date().toISOString() },
-    { id: "s_demo_old", participant: "p_7c20be915d3a64f1", started_at: iso(-86400), samples: 4210, last_ts: iso(-86000) },
-  ],
+  login: async () => ({ access_token: "demo", role: demoRole }),
+  me: async () => ({ username: "demo", role: demoRole, participant: demoRole === "member" ? ME : null }),
+  pairingCode: async () => ({ code: "K7M2QX", expires_in_s: 600 }),
+  devices: async () => [...demoDevices],
+  disconnectDevice: async (id) => {
+    demoDevices.splice(demoDevices.findIndex((d) => d.id === id), 1);
+    return { deleted: id };
+  },
+  eraseMyData: async () => ({ erased: true }),
+  deleteMyAccount: async () => ({ deleted: true }),
+  sessions: async () => demoSessions().filter((s) => demoRole !== "member" || s.participant === ME),
   samples: async (_id, since) => (since == null ? points : points.filter((p) => p.t > since)),
   summary: async () => ({ events }),
   device: async () => ({
