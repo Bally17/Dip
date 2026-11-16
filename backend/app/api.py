@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
 
 from . import device, inference, storage
-from .auth import admin_only, current_user
+from .auth import admin_only, current_user, own_participant, staff_only
 from .features import WINDOW_S
 
 router = APIRouter(dependencies=[Depends(current_user)])
@@ -48,45 +48,46 @@ def _export_row(row: dict) -> dict:
     return out
 
 
-async def _require_session(session: str) -> None:
-    if not await storage.session_exists(session):
+async def visible_session(session: str, user: dict = Depends(current_user)) -> str:
+    """Relácia, ktorú smie prihlásený otvoriť. Člen len svoju, cudzia sa tvári ako neexistujúca."""
+    own = own_participant(user)
+    found = await storage.session_exists(session) if own is None else await storage.session_participant(session) == own
+    if not found:
         raise HTTPException(404, "Relácia neexistuje")
+    return session
 
 
-@router.get("/participants")
+@router.get("/participants", dependencies=[Depends(staff_only)])
 async def participants():
     return await storage.list_participants()
 
 
 @router.get("/sessions")
-async def sessions(participant: str | None = None):
-    return await storage.list_sessions(participant)
+async def sessions(participant: str | None = None, user: dict = Depends(current_user)):
+    return await storage.list_sessions(own_participant(user) or participant)
 
 
 @router.get("/sessions/{session}/summary")
-async def summary(session: str):
-    await _require_session(session)
+async def summary(session: str = Depends(visible_session)):
     return {"session": session, **await storage.session_summary(session), **await storage.session_events(session)}
 
 
 @router.get("/sessions/{session}/device")
-async def device_state(session: str):
+async def device_state(session: str = Depends(visible_session)):
     """Stav prenosu: skutočná frekvencia vzoriek, výpadky, oneskorenie a čas od poslednej správy."""
-    await _require_session(session)
     return {"session": session, **device.stats(await storage.arrival_times(session), time.time())}
 
 
 @router.get("/sessions/{session}/samples")
-async def samples(session: str, since: float | None = None, max_points: int = Query(2000, ge=10, le=20000)):
+async def samples(session: str = Depends(visible_session), since: float | None = None, max_points: int = Query(2000, ge=10, le=20000)):
     """Vzorky relácie. `since` (Unix čas v s) vráti len novšie, vhodné na živé zobrazenie."""
-    await _require_session(session)
     rows = await storage.session_samples(session, since)
     stride = max(1, len(rows) // max_points)
     return [_point(r) for r in rows[::stride]]
 
 
 @router.get("/sessions/{session}/risk")
-async def risk(session: str):
+async def risk(session: str = Depends(visible_session)):
     if not inference.models_loaded():
         raise HTTPException(503, "Modely nie sú načítané")
     window = inference.to_window(await storage.recent_samples(session, WINDOW_S + 1))
@@ -96,16 +97,14 @@ async def risk(session: str):
 
 
 @router.get("/sessions/{session}/risk/history")
-async def risk_history(session: str, step: float = Query(2.5, ge=0.5, le=30)):
+async def risk_history(session: str = Depends(visible_session), step: float = Query(2.5, ge=0.5, le=30)):
     if not inference.models_loaded():
         raise HTTPException(503, "Modely nie sú načítané")
-    await _require_session(session)
     return inference.risk_series(await storage.session_samples(session), step)
 
 
 @router.get("/sessions/{session}/export")
-async def export(session: str, format: str = Query("csv", pattern="^(csv|json)$")):
-    await _require_session(session)
+async def export(session: str = Depends(visible_session), format: str = Query("csv", pattern="^(csv|json)$")):
     points = [_export_row(r) for r in await storage.session_samples(session)]
     name = f"attachment; filename={session}.{format}"
     if format == "json":

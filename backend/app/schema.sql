@@ -6,6 +6,11 @@ CREATE TABLE IF NOT EXISTS users (
     role text NOT NULL CHECK (role IN ('admin', 'researcher'))
 );
 
+-- Rola member pribudla neskôr, obmedzenie sa preto nastavuje nanovo aj na starších inštaláciách.
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'researcher', 'member'));
+
 CREATE TABLE IF NOT EXISTS participants (
     code text PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now()

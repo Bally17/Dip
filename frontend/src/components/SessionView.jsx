@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
+import { can } from "../lib/roles.js";
 import { analyzePhases, analyzeSession, finding, peak, shareAbove, summaryCsv } from "../lib/analysis.js";
 import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "../lib/series.js";
 import AnalysisTable from "./AnalysisTable.jsx";
@@ -171,7 +172,7 @@ export default function SessionView({ session, user, onErased }) {
           )}
           <button className="primary" onClick={() => api.download(session.id, "csv")}>Stiahnuť CSV</button>
           <button className="quiet" onClick={() => api.download(session.id, "json")}>Stiahnuť JSON</button>
-          {user.role === "admin" && <button className="link" onClick={erase}>Vymazať účastníka</button>}
+          {can(user.role, "eraseParticipant") && <button className="link" onClick={erase}>Vymazať účastníka</button>}
         </div>
       </header>
 

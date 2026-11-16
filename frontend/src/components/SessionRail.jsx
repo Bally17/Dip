@@ -1,3 +1,5 @@
+import { can, roleLabel } from "../lib/roles.js";
+
 const ago = (iso) => {
   if (!iso) return "bez dát";
   const s = (Date.now() - new Date(iso).getTime()) / 1000;
@@ -20,7 +22,8 @@ export function Mark({ size = 28 }) {
   );
 }
 
-export default function SessionRail({ sessions, selected, onSelect, user, onLogout, error }) {
+export default function SessionRail({ sessions, selected, onSelect, page, onPage, user, onLogout, error }) {
+  const pages = [can(user.role, "manageUsers") && { id: "users", label: "Účty" }].filter(Boolean);
   return (
     <aside className="rail">
       <div className="brand">
@@ -50,8 +53,26 @@ export default function SessionRail({ sessions, selected, onSelect, user, onLogo
           ))}
         </ul>
       </nav>
+      {pages.length > 0 && (
+        <nav aria-label="Správa" className="rail-pages">
+          <p className="group-label">Správa</p>
+          <ul>
+            {pages.map((p) => (
+              <li key={p.id}>
+                <button
+                  className={`rail-item ${page === p.id ? "active" : ""}`}
+                  aria-current={page === p.id ? "page" : undefined}
+                  onClick={() => onPage(p.id)}
+                >
+                  <span className="rail-name">{p.label}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      )}
       <div className="rail-user">
-        <span>{user.username} ({user.role === "admin" ? "admin" : "výskumník"})</span>
+        <span>{user.username} ({roleLabel(user.role)})</span>
         <button onClick={onLogout}>Odhlásiť sa</button>
       </div>
     </aside>

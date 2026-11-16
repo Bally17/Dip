@@ -48,6 +48,11 @@ def pseudonymize(value: str, prefix: str) -> str:
     return f"{prefix}_{digest}"
 
 
+def participant_code(username: str) -> str:
+    """Pseudonym, pod ktorým sú merania člena. Rovnaký výpočet ako pri mene zo simulátora."""
+    return pseudonymize(username, "p")
+
+
 def ingest_key_ok(candidate: str | None) -> bool:
     expected = os.environ.get("INGEST_KEY")
     return bool(expected and candidate and hmac.compare_digest(expected, candidate))

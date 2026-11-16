@@ -102,6 +102,31 @@ async def ensure_user(username: str, password_hash: str, role: str) -> None:
         )
 
 
+async def create_user(username: str, password_hash: str, role: str) -> bool:
+    """Vytvorí účet. Vráti False, ak meno už existuje."""
+    async with _pool.connection() as conn:
+        cur = await conn.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (%s, %s, %s) ON CONFLICT DO NOTHING",
+            (username, password_hash, role),
+        )
+        return cur.rowcount > 0
+
+
+async def list_users() -> list[dict]:
+    return await _fetch("SELECT username, role FROM users ORDER BY role, username")
+
+
+async def delete_user(username: str) -> bool:
+    async with _pool.connection() as conn:
+        cur = await conn.execute("DELETE FROM users WHERE username = %s", (username,))
+        return cur.rowcount > 0
+
+
+async def session_participant(session: str) -> str | None:
+    rows = await _fetch("SELECT participant FROM sessions WHERE id = %s", (session,))
+    return rows[0]["participant"] if rows else None
+
+
 async def list_participants() -> list[dict]:
     return await _fetch(
         "SELECT p.code, p.created_at, count(s.id) AS sessions FROM participants p"

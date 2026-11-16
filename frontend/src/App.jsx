@@ -3,12 +3,14 @@ import { api, hasToken, setToken, setUnauthorizedHandler } from "./api.js";
 import Login from "./components/Login.jsx";
 import SessionRail from "./components/SessionRail.jsx";
 import SessionView from "./components/SessionView.jsx";
+import UsersView from "./components/UsersView.jsx";
 
 export default function App() {
   const [user, setUser] = useState(null);
   const [checking, setChecking] = useState(hasToken());
   const [sessions, setSessions] = useState([]);
   const [selected, setSelected] = useState(null);
+  const [page, setPage] = useState("sessions");
   const [error, setError] = useState("");
 
   const logout = useCallback(() => {
@@ -16,6 +18,7 @@ export default function App() {
     setUser(null);
     setSessions([]);
     setSelected(null);
+    setPage("sessions");
   }, []);
 
   useEffect(() => {
@@ -49,10 +52,17 @@ export default function App() {
   return (
     <div className="app">
       <SessionRail
-        sessions={sessions} selected={selected} onSelect={setSelected}
+        sessions={sessions} selected={page === "sessions" ? selected : null}
+        onSelect={(id) => {
+          setSelected(id);
+          setPage("sessions");
+        }}
+        page={page} onPage={setPage}
         user={user} onLogout={logout} error={error}
       />
-      {session ? (
+      {page === "users" ? (
+        <UsersView />
+      ) : session ? (
         <SessionView
           key={session.id} session={session} user={user}
           onErased={() => {

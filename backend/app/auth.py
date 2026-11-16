@@ -48,6 +48,17 @@ def admin_only(user: dict = Depends(current_user)) -> dict:
     return user
 
 
+def staff_only(user: dict = Depends(current_user)) -> dict:
+    if user["role"] not in ("admin", "researcher"):
+        raise HTTPException(403, "Vyžaduje sa rola admin alebo výskumník")
+    return user
+
+
+def own_participant(user: dict) -> str | None:
+    """Pseudonym, na ktorý je člen obmedzený. None znamená bez obmedzenia (admin, výskumník)."""
+    return security.participant_code(user["username"]) if user["role"] == "member" else None
+
+
 @router.get("/auth/me")
 def me(user: dict = Depends(current_user)):
     return user

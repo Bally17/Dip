@@ -71,6 +71,9 @@ const realApi = {
   risk: (id) => request(`/sessions/${id}/risk`),
   riskHistory: (id) => request(`/sessions/${id}/risk/history`),
   erase: (code) => request(`/participants/${code}`, { method: "DELETE" }),
+  users: () => request("/users"),
+  createUser: (username, password, role) => request("/users", { method: "POST", body: { username, password, role } }),
+  deleteUser: (id) => request(`/users/${encodeURIComponent(id)}`, { method: "DELETE" }),
   async download(id, format) {
     const res = await request(`/sessions/${id}/export?format=${format}`, { raw: true });
     const url = URL.createObjectURL(await res.blob());
