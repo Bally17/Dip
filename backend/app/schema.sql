@@ -11,6 +11,23 @@ ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
 
 ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'researcher', 'member'));
 
+-- Spárované headsety. Token je uložený len ako odtlačok.
+CREATE TABLE IF NOT EXISTS devices (
+    id text PRIMARY KEY,
+    owner text NOT NULL REFERENCES users (username) ON DELETE CASCADE,
+    token_hash text NOT NULL UNIQUE,
+    paired_at timestamptz NOT NULL DEFAULT now(),
+    last_seen timestamptz,
+    revoked_at timestamptz
+);
+
+CREATE TABLE IF NOT EXISTS pairing_codes (
+    code_hash text PRIMARY KEY,
+    owner text NOT NULL REFERENCES users (username) ON DELETE CASCADE,
+    expires_at timestamptz NOT NULL,
+    used_at timestamptz
+);
+
 CREATE TABLE IF NOT EXISTS participants (
     code text PRIMARY KEY,
     created_at timestamptz NOT NULL DEFAULT now()
