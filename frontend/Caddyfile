@@ -1,0 +1,17 @@
+# Pre localhost si Caddy vystaví vlastný certifikát, pre verejnú doménu ho získa z Let's Encrypt.
+{$SITE_ADDRESS:localhost} {
+	encode gzip
+	# HSTS len pre verejnú adresu, na localhoste by prehliadaču zablokovalo vývojové porty bez TLS.
+	@public not host localhost
+	header @public Strict-Transport-Security "max-age=31536000"
+
+	handle_path /api/* {
+		reverse_proxy api:8000
+	}
+
+	handle {
+		root * /srv
+		try_files {path} /index.html
+		file_server
+	}
+}
