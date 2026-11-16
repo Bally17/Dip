@@ -61,4 +61,5 @@ def own_participant(user: dict) -> str | None:
 
 @router.get("/auth/me")
 def me(user: dict = Depends(current_user)):
-    return user
+    """Prihlásený účet. Člen dostane aj pseudonym, pod ktorým sú jeho merania."""
+    return {**user, "participant": own_participant(user)}

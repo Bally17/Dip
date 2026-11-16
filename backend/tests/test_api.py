@@ -74,7 +74,7 @@ def test_endpoints_need_a_token(client):
 
 
 def test_me_returns_role(client):
-    assert client.get("/auth/me", headers=auth(client, "viewer")).json() == {"username": "viewer", "role": "researcher"}
+    assert client.get("/auth/me", headers=auth(client, "viewer")).json() == {"username": "viewer", "role": "researcher", "participant": None}
 
 
 def test_samples_have_angles_and_support_since(client):
