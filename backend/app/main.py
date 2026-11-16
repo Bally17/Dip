@@ -6,7 +6,7 @@ from fastapi import Depends, FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import ValidationError
 
-from . import api, auth, inference, security, storage
+from . import api, auth, inference, security, storage, users
 from .schemas import message_adapter
 
 
@@ -34,6 +34,7 @@ app.add_middleware(
 )
 app.include_router(auth.router)
 app.include_router(api.router)
+app.include_router(users.router)
 
 
 @app.get("/openapi.json", include_in_schema=False, dependencies=[Depends(auth.current_user)])
