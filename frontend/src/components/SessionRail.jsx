@@ -13,9 +13,9 @@ export const isLive = (session) => session?.last_ts && Date.now() - new Date(ses
 export function Mark({ size = 28 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 28 28" aria-hidden="true">
-      <rect width="28" height="28" rx="6" fill="#1d1f20" />
-      <path d="M9 7h10M9 12h6M9 17h10M9 22h6" stroke="#9aa1a9" strokeWidth="1.5" strokeLinecap="round" />
-      <path d="M9 12h6" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" />
+      <rect width="28" height="28" rx="6" fill="#faa916" />
+      <path d="M9 7h10M9 12h6M9 17h10M9 22h6" stroke="#2a272b" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M9 12h6" stroke="#fbfffe" strokeWidth="2.5" strokeLinecap="round" />
     </svg>
   );
 }
