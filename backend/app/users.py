@@ -4,10 +4,12 @@ from typing import Literal
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
-from . import security, storage
+from . import devices, security, storage
 from .auth import admin_only
 
 router = APIRouter(dependencies=[Depends(admin_only)])
+# Vlastné údaje člena (právo na vymazanie bez účasti admina).
+me_router = APIRouter()
 
 
 class NewUser(BaseModel):
@@ -43,3 +45,21 @@ async def delete_user(user_id: str, admin: dict = Depends(admin_only)):
         raise HTTPException(400, "Vlastný účet sa zrušiť nedá")
     await storage.delete_user(match["username"])
     return {"deleted": user_id}
+
+
+@me_router.delete("/me/data")
+async def erase_my_data(user: dict = Depends(devices.member_only)):
+    """Zmaže všetky merania prihláseného člena. Účet a spárované headsety ostanú."""
+    return {"erased": await storage.delete_participant(security.participant_code(user["username"]))}
+
+
+@me_router.delete("/me")
+async def delete_my_account(user: dict = Depends(devices.member_only)):
+    """Zmaže merania, headsety aj účet prihláseného člena."""
+    for device in await storage.list_devices(user["username"]):
+        await storage.revoke_device(device["id"], user["username"])
+        for ws in list(devices.connections.get(device["id"], ())):
+            await ws.close(code=1008)
+    await storage.delete_participant(security.participant_code(user["username"]))
+    await storage.delete_user(user["username"])
+    return {"deleted": True}
