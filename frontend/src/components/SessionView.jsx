@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../api.js";
 import { analyzePhases, finding, peak, shareAbove } from "../lib/analysis.js";
-import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, valueAt } from "../lib/series.js";
+import { appendPoints, formatClock, headSpeed, lastWithin, phaseSegments, pointSpeed, valueAt } from "../lib/series.js";
 import AnalysisTable from "./AnalysisTable.jsx";
+import PoseTable from "./PoseTable.jsx";
 import RiskGauge from "./RiskGauge.jsx";
 import { isLive } from "./SessionRail.jsx";
 import TimeChart from "./TimeChart.jsx";
@@ -88,6 +89,14 @@ export default function SessionView({ session, user, onErased }) {
   const rel = useMemo(() => points.map((p) => ({ ...p, t: p.t - t0 })), [points, t0]);
   const relRisk = useMemo(() => risk.map((r) => ({ ...r, t: r.t - t0 })), [risk, t0]);
   const speed = useMemo(() => headSpeed(rel), [rel]);
+  // Rýchlosť oboch ovládačov na spoločnej osi. Ovládač, ktorý simulátor neposlal, v grafe chýba.
+  const hands = useMemo(() => {
+    const byT = new Map();
+    for (const side of ["left", "right"]) {
+      for (const row of pointSpeed(rel, (p) => p[side]?.pos)) byT.set(row.t, { ...byT.get(row.t), t: row.t, [side]: row.speed });
+    }
+    return [...byT.values()].sort((a, b) => a.t - b.t);
+  }, [rel]);
   const events = useMemo(
     () => (summary.events ?? []).map((e) => ({ ...e, t: e.t - t0 })),
     [summary.events, t0],
@@ -111,7 +120,13 @@ export default function SessionView({ session, user, onErased }) {
     { key: "arousal", label: "Vzrušenie", color: hasFear ? COLORS.arousal : COLORS.fear },
   ];
   const common = { xDomain, bands, hoverT, onHover: setHoverT, showClock: true };
-  const marks = events.filter((e) => e.kind === "reaction_time").map((e) => ({ t: e.t, label: `Reakcia ${Math.round(e.value_ms)} ms` }));
+  const MARK_LABEL = {
+    reaction_time: (ms) => `Reakcia ${Math.round(ms)} ms`,
+    task1_time: (ms) => `Úloha 1 splnená za ${(ms / 1000).toFixed(1)} s`,
+    task2_time: (ms) => `Úloha 2 splnená za ${(ms / 1000).toFixed(1)} s`,
+  };
+  const marks = events.filter((e) => MARK_LABEL[e.kind]).map((e) => ({ t: e.t, label: MARK_LABEL[e.kind](e.value_ms) }));
+  const poseAt = hoverT == null ? rel[rel.length - 1] : rel.reduce((best, p) => (Math.abs(p.t - hoverT) < Math.abs(best.t - hoverT) ? p : best), rel[0]);
 
   async function erase() {
     if (!window.confirm(`Vymazať účastníka ${session.participant} aj všetky jeho relácie? Nedá sa to vrátiť.`)) return;
@@ -176,6 +191,16 @@ export default function SessionView({ session, user, onErased }) {
                 {...common} title="Rýchlosť otáčania hlavy" unit=" °/s" height={110}
                 series={[{ key: "speed", label: "Rýchlosť", color: COLORS.ink }]} data={view(speed)}
               />
+              {hands.length > 0 && (
+                <TimeChart
+                  {...common} title="Rýchlosť ovládačov" unit=" m/s" height={120} format={(v) => v.toFixed(2)}
+                  series={[
+                    { key: "left", label: "Ľavý", color: COLORS.ink },
+                    { key: "right", label: "Pravý", color: COLORS.arousal },
+                  ]}
+                  data={view(hands)}
+                />
+              )}
               <p className="phase-key">
                 {bands.map((b, i) => (
                   <span key={`${b.phase}-${b.t0}`}><i className={`swatch band-${i % 2}`} aria-hidden="true" />{phaseName(b.phase)} od {formatClock(b.t0)}</span>
@@ -184,6 +209,11 @@ export default function SessionView({ session, user, onErased }) {
             </div>
             <RiskGauge fear={hasFear ? gaugeAt("fear") : null} arousal={gaugeAt("arousal")} />
           </div>
+
+          <section className="analysis">
+            <h2>Poloha a orientácia</h2>
+            <PoseTable point={poseAt} />
+          </section>
 
           <section className="analysis">
             <h2>Súhrn po fázach</h2>

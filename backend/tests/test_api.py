@@ -10,7 +10,9 @@ IDENTITY = {"x": 0, "y": 0, "z": 0, "w": 1}
 
 def rows(seconds=12, hz=10, hr=80.0):
     return [{"t": 1000 + i / hz, "phase": 0, "hr": hr,
-             "head": {"pos": {"x": 0, "y": 1.7, "z": 0}, "rot": IDENTITY}} for i in range(int(seconds * hz))]
+             "head": {"pos": {"x": 0, "y": 1.7, "z": 0}, "rot": IDENTITY},
+             "left_hand": {"pos": {"x": -0.3, "y": 1.1, "z": 0.2}, "rot": IDENTITY},
+             "right_hand": None} for i in range(int(seconds * hz))]
 
 
 class FakeModel:
@@ -83,6 +85,13 @@ def test_samples_have_angles_and_support_since(client):
     assert len(newer) == 2
 
 
+def test_samples_carry_head_and_controller_poses(client):
+    point = client.get("/sessions/s_ok/samples", headers=auth(client)).json()[0]
+    assert point["head_pos"] == [0, 1.7, 0]
+    assert point["left"] == {"pos": [-0.3, 1.1, 0.2], "pitch": 0, "yaw": 0}
+    assert point["right"] is None
+
+
 def test_samples_are_downsampled(client):
     points = client.get("/sessions/s_ok/samples", params={"max_points": 10}, headers=auth(client)).json()
     assert len(points) <= 20
@@ -113,7 +122,11 @@ def test_export_csv_and_json(client):
     h = auth(client)
     csv = client.get("/sessions/s_ok/export", headers=h)
     assert csv.headers["content-type"].startswith("text/csv")
-    assert csv.text.splitlines()[0] == "t,phase,hr,pitch,yaw,head_x,head_y,head_z"
+    header = csv.text.splitlines()[0].split(",")
+    assert header[:8] == ["t", "phase", "hr", "pitch", "yaw", "head_x", "head_y", "head_z"]
+    assert {"left_x", "left_y", "left_z", "left_pitch", "left_yaw", "right_x", "right_yaw"} <= set(header)
+    first = dict(zip(header, csv.text.splitlines()[1].split(",")))
+    assert float(first["left_x"]) == -0.3 and first["right_x"] == ""
     assert len(csv.text.splitlines()) == 121
     js = client.get("/sessions/s_ok/export", params={"format": "json"}, headers=h).json()
     assert len(js["samples"]) == 120 and js["events"][0]["kind"] == "reaction_time"

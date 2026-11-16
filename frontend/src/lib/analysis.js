@@ -2,7 +2,7 @@ import { formatClock, headSpeed } from "./series.js";
 
 const mean = (xs) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
-// Súhrn po fázach: trvanie, priemerný tep, rýchlosť hlavy, odhad strachu a reakčný čas.
+// Súhrn po fázach: začiatok, koniec, priemerný tep, rýchlosť hlavy, odhad strachu, reakčný čas a časy úloh.
 // `points` majú phase a t; `risk` sú {t, fear?, arousal?}; `events` {t, phase, kind, value_ms}.
 export function analyzePhases(points, risk, events) {
   const speeds = headSpeed(points);
@@ -13,13 +13,18 @@ export function analyzePhases(points, risk, events) {
     const t0 = own[0].t;
     const t1 = own[own.length - 1].t;
     const inPhase = (r) => r.t >= t0 && r.t <= t1;
+    const eventMean = (kind) => mean(events.filter((e) => e.phase === phase && e.kind === kind).map((e) => e.value_ms));
     return {
       phase,
+      startT: t0,
+      endT: t1,
       durationS: t1 - t0,
       hrMean: mean(own.map((p) => p.hr).filter((v) => v != null)),
       headSpeedMean: mean(speeds.filter(inPhase).map((s) => s.speed)),
       riskMean: mean(risk.filter(inPhase).map((r) => r[riskKey]).filter((v) => v != null)),
-      reactionMs: mean(events.filter((e) => e.phase === phase && e.kind === "reaction_time").map((e) => e.value_ms)),
+      reactionMs: eventMean("reaction_time"),
+      task1Ms: eventMean("task1_time"),
+      task2Ms: eventMean("task2_time"),
     };
   });
 }

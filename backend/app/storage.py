@@ -126,12 +126,12 @@ async def session_exists(session: str) -> bool:
 
 
 async def session_samples(session: str, since: float | None = None, limit: int = 100000) -> list[dict]:
-    """Vzorky relácie od najstaršej: t (s), phase, hr, head (pozícia a rotácia)."""
+    """Vzorky relácie od najstaršej: t (s), phase, hr a pózy hlavy a oboch ovládačov."""
     since_sql = "AND ts > to_timestamp(%s)" if since is not None else ""
     params = (session, since, limit) if since is not None else (session, limit)
     return await _fetch(
-        "SELECT extract(epoch FROM ts)::float8 AS t, phase, heart_rate AS hr, head FROM samples"
-        f" WHERE session = %s {since_sql} ORDER BY ts LIMIT %s",
+        "SELECT extract(epoch FROM ts)::float8 AS t, phase, heart_rate AS hr, head, left_hand, right_hand"
+        f" FROM samples WHERE session = %s {since_sql} ORDER BY ts LIMIT %s",
         params,
     )
 

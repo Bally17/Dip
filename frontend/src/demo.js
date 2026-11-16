@@ -18,6 +18,9 @@ const points = Array.from({ length: SECONDS * HZ }, (_, i) => {
     hr: 72 + phase * 13 + Math.sin(t / 4) * 3 + noise(i) * 2,
     pitch: [0, 12, 33][phase] + Math.sin(t / 3) * 4,
     yaw: Math.sin(t / 2) * [10, 18, 30][phase] + noise(i + 7) * (phase + 1),
+    head_pos: [Math.sin(t) * 0.05, 1.7, Math.cos(t) * 0.05],
+    left: { pos: [-0.3 + Math.sin(t * 1.3) * 0.04 * (phase + 1), 1.1, 0.2], pitch: 10, yaw: -15 },
+    right: { pos: [0.3 + Math.sin(t * 1.7) * 0.05 * (phase + 1), 1.1, 0.2], pitch: 12, yaw: 14 },
   };
 });
 
@@ -37,6 +40,11 @@ const events = Array.from({ length: 12 }, (_, k) => ({
   kind: "reaction_time",
   value_ms: 380 + Math.min(2, Math.floor((4 + k * 4.5) / 20)) * 90 + noise(k) * 40,
 }));
+
+events.push(
+  { t: T0 + 39, phase: 1, kind: "task1_time", value_ms: 14200 },
+  { t: T0 + 59, phase: 2, kind: "task2_time", value_ms: 16800 },
+);
 
 const iso = (offset) => new Date((T0 + offset) * 1000).toISOString();
 

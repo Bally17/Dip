@@ -37,11 +37,18 @@ def pose(t: float, phase: int, shift: float = 0.0) -> dict:
 async def run_session(url: str, seconds: int, hz: int, participant: str) -> None:
     session = f"{participant}-{int(time.time())}"
     start = time.time()
+    task1_sent = False
     async with connect(url) as ws:
         for i in range(seconds * hz):
             now = time.time()
             phase = min(int((now - start) // max(seconds / 3, 1)), 2)
             base = {"participant": participant, "session": session, "t": int(now * 1000), "phase": phase}
+            if phase == 2 and not task1_sent:
+                # Úloha 1 sa končí s druhou fázou, jej čas patrí ešte k nej.
+                task1_sent = True
+                await ws.send(json.dumps({**base, "phase": 1, "type": "event", "kind": "task1_time",
+                                          "value_ms": random.gauss(seconds / 3 * 700, 400)}))
+                await ws.recv()
             await ws.send(json.dumps({
                 **base, "type": "sample",
                 "heart_rate": 72 + phase * 14 + math.sin(now / 4) * 3 + random.gauss(0, 2),
@@ -53,6 +60,9 @@ async def run_session(url: str, seconds: int, hz: int, participant: str) -> None
                                           "value_ms": random.gauss(400 + phase * 80, 40)}))
                 await ws.recv()
             await asyncio.sleep(1 / hz)
+        await ws.send(json.dumps({**base, "type": "event", "kind": "task2_time",
+                                  "value_ms": random.gauss(seconds / 3 * 800, 400)}))
+        await ws.recv()
 
 
 async def main() -> None:

@@ -13,9 +13,38 @@ from .features import WINDOW_S
 router = APIRouter(dependencies=[Depends(current_user)])
 
 
+def _xyz(pose: dict) -> list[float]:
+    return [pose["pos"]["x"], pose["pos"]["y"], pose["pos"]["z"]]
+
+
+def _hand(pose: dict | None) -> dict | None:
+    """Ovládač: poloha v metroch a uhly v stupňoch. None, ak ho simulátor neposlal."""
+    if not pose:
+        return None
+    pitch, yaw = inference.quat_to_pitch_yaw(pose["rot"])
+    return {"pos": _xyz(pose), "pitch": pitch, "yaw": yaw}
+
+
 def _point(row: dict) -> dict:
     pitch, yaw = inference.quat_to_pitch_yaw(row["head"]["rot"])
-    return {"t": row["t"], "phase": row["phase"], "hr": row["hr"], "pitch": pitch, "yaw": yaw}
+    return {"t": row["t"], "phase": row["phase"], "hr": row["hr"], "pitch": pitch, "yaw": yaw,
+            "head_pos": _xyz(row["head"]), "left": _hand(row.get("left_hand")), "right": _hand(row.get("right_hand"))}
+
+
+EXPORT_FIELDS = ["t", "phase", "hr", "pitch", "yaw", "head_x", "head_y", "head_z",
+                 *(f"{side}_{name}" for side in ("left", "right") for name in ("x", "y", "z", "pitch", "yaw"))]
+
+
+def _export_row(row: dict) -> dict:
+    """Plochý riadok exportu. Chýbajúci ovládač má prázdne hodnoty."""
+    point = _point(row)
+    out = {key: point[key] for key in ("t", "phase", "hr", "pitch", "yaw")}
+    out.update(zip(("head_x", "head_y", "head_z"), point["head_pos"]))
+    for side in ("left", "right"):
+        hand = point[side]
+        values = [*hand["pos"], hand["pitch"], hand["yaw"]] if hand else [None] * 5
+        out.update(zip((f"{side}_{name}" for name in ("x", "y", "z", "pitch", "yaw")), values))
+    return out
 
 
 async def _require_session(session: str) -> None:
@@ -69,15 +98,14 @@ async def risk_history(session: str, step: float = Query(2.5, ge=0.5, le=30)):
 @router.get("/sessions/{session}/export")
 async def export(session: str, format: str = Query("csv", pattern="^(csv|json)$")):
     await _require_session(session)
-    points = [_point(r) | {"head_x": r["head"]["pos"]["x"], "head_y": r["head"]["pos"]["y"],
-                           "head_z": r["head"]["pos"]["z"]} for r in await storage.session_samples(session)]
+    points = [_export_row(r) for r in await storage.session_samples(session)]
     name = f"attachment; filename={session}.{format}"
     if format == "json":
         body = {"session": session, "samples": points, **await storage.session_events(session)}
         return Response(json.dumps(body), media_type="application/json",
                         headers={"Content-Disposition": name})
     out = io.StringIO()
-    writer = csv.DictWriter(out, fieldnames=["t", "phase", "hr", "pitch", "yaw", "head_x", "head_y", "head_z"])
+    writer = csv.DictWriter(out, fieldnames=EXPORT_FIELDS)
     writer.writeheader()
     writer.writerows(points)
     return Response(out.getvalue(), media_type="text/csv", headers={"Content-Disposition": name})
