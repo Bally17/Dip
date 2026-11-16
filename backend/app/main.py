@@ -53,7 +53,7 @@ async def ingest(ws: WebSocket, key: str | None = None):
             try:
                 msg = message_adapter.validate_json(raw)
             except ValidationError as e:
-                await ws.send_json({"ok": False, "error": e.errors(include_url=False, include_context=False)})
+                await ws.send_json({"ok": False, "error": e.errors(include_url=False, include_context=False, include_input=False)})
                 continue
             msg.session = security.pseudonymize(f"{msg.participant}/{msg.session}", "s")
             msg.participant = security.pseudonymize(msg.participant, "p")

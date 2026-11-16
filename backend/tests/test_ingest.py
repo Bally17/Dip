@@ -65,3 +65,9 @@ def test_missing_or_wrong_key_is_refused(saved, url):
     with pytest.raises(WebSocketDisconnect):
         send(SAMPLE, url)
     assert saved == []
+
+
+def test_validation_error_does_not_echo_the_message_back(saved):
+    reply = send({**SAMPLE, "participant": "TAJNY-KOD", "heart_rate": 999})
+    assert reply["ok"] is False
+    assert "TAJNY-KOD" not in str(reply) and "input" not in reply["error"][0]
