@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
     try {
       const res = await api.login(form.get("username"), form.get("password"));
       setToken(res.access_token);
-      onLogin({ username: form.get("username"), role: res.role });
+      onLogin(await api.me().catch(() => ({ username: form.get("username"), role: res.role })));
     } catch (e) {
       setError(e.status === 401 ? "Nesprávne meno alebo heslo." : "Server neodpovedá. Skontroluj, či beží API.");
     } finally {

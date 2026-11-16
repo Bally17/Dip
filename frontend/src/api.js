@@ -74,6 +74,11 @@ const realApi = {
   users: () => request("/users"),
   createUser: (username, password, role) => request("/users", { method: "POST", body: { username, password, role } }),
   deleteUser: (id) => request(`/users/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  pairingCode: () => request("/devices/pairing-code", { method: "POST" }),
+  devices: () => request("/devices"),
+  disconnectDevice: (id) => request(`/devices/${encodeURIComponent(id)}`, { method: "DELETE" }),
+  eraseMyData: () => request("/me/data", { method: "DELETE" }),
+  deleteMyAccount: () => request("/me", { method: "DELETE" }),
   async download(id, format) {
     const res = await request(`/sessions/${id}/export?format=${format}`, { raw: true });
     const url = URL.createObjectURL(await res.blob());

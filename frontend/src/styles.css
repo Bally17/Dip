@@ -201,13 +201,18 @@ caption { text-align: left; color: var(--muted); font-size: 13px; padding-bottom
 
 /* Formuláre a jednoduché tabuľky na stránkach správy */
 .rail-pages { margin-top: 20px; }
-.inline-form { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
+.inline-form { padding-bottom: 12px; display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: flex-end; }
 .inline-form label { display: grid; gap: 4px; font-size: 13px; color: var(--muted); }
 .inline-form input, .inline-form select { font: inherit; color: var(--text); height: 32px; padding: 0 10px; border: 1px solid var(--control); border-radius: var(--radius-control); background: var(--white); min-width: 180px; }
 select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
 table.plain th, table.plain td { text-align: left; }
 table.plain td:last-child { text-align: right; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+.pairing { display: grid; gap: 10px; justify-items: start; padding-bottom: 8px; }
+.pairing-code { font-size: 40px; line-height: 1.1; letter-spacing: 0.12em; font-weight: 700; padding: 10px 18px; border: 2px solid var(--orange); border-radius: var(--radius-card); background: var(--ground); }
+.danger-actions { margin: 12px 0 8px; }
+.view > .note { margin: 0 0 12px; color: var(--text); }
 
 /* Prihlásenie */
 .login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }

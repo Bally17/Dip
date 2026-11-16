@@ -23,7 +23,11 @@ export function Mark({ size = 28 }) {
 }
 
 export default function SessionRail({ sessions, selected, onSelect, page, onPage, user, onLogout, error }) {
-  const pages = [can(user.role, "manageUsers") && { id: "users", label: "Účty" }].filter(Boolean);
+  const pages = [
+    can(user.role, "manageUsers") && { id: "users", label: "Účty" },
+    can(user.role, "pairDevice") && { id: "device", label: "Môj Oculus" },
+  ].filter(Boolean);
+  const isMember = can(user.role, "pairDevice");
   return (
     <aside className="rail">
       <div className="brand">
@@ -32,10 +36,10 @@ export default function SessionRail({ sessions, selected, onSelect, page, onPage
       </div>
       <p className="scope">Štúdia strachu z výšky</p>
       <nav aria-label="Relácie">
-        <p className="group-label">Relácie</p>
+        <p className="group-label">{isMember ? "Moje relácie" : "Relácie"}</p>
         {error && <p className="rail-note" role="alert">{error}</p>}
         {!error && sessions.length === 0 && (
-          <p className="rail-note">Zatiaľ nie je žiadna relácia. Spusti simulátor alebo mock sender.</p>
+          <p className="rail-note">{isMember ? "Zatiaľ nemáš žiadne meranie. Spáruj svoj Oculus v časti Môj Oculus." : "Zatiaľ nie je žiadna relácia. Spusti simulátor alebo mock sender."}</p>
         )}
         <ul>
           {sessions.map((s) => (
@@ -55,7 +59,7 @@ export default function SessionRail({ sessions, selected, onSelect, page, onPage
       </nav>
       {pages.length > 0 && (
         <nav aria-label="Správa" className="rail-pages">
-          <p className="group-label">Správa</p>
+          <p className="group-label">{isMember ? "Môj účet" : "Správa"}</p>
           <ul>
             {pages.map((p) => (
               <li key={p.id}>
