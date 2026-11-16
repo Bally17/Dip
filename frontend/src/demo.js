@@ -48,7 +48,7 @@ export const demoApi = {
     { id: "s_demo_old", participant: "p_7c20be915d3a64f1", started_at: iso(-86400), samples: 4210, last_ts: iso(-86000) },
   ],
   samples: async (_id, since) => (since == null ? points : points.filter((p) => p.t > since)),
-  summary: async () => ({ events, questionnaires: [] }),
+  summary: async () => ({ events }),
   risk: async () => ({ probabilities: risk[risk.length - 1] }),
   riskHistory: async () => risk,
   erase: async () => ({}),

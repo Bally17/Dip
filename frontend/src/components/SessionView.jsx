@@ -17,7 +17,7 @@ function useSession(session, live) {
   const id = session.id;
   const [points, setPoints] = useState([]);
   const [risk, setRisk] = useState([]);
-  const [summary, setSummary] = useState({ events: [], questionnaires: [] });
+  const [summary, setSummary] = useState({ events: [] });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const lastT = useRef(null);

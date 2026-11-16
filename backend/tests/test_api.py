@@ -34,7 +34,7 @@ def client(monkeypatch):
         return data if s == "s_ok" else []
 
     async def session_events(s):
-        return {"events": [{"t": 1001.0, "phase": 0, "kind": "reaction_time", "value_ms": 400}], "questionnaires": []}
+        return {"events": [{"t": 1001.0, "phase": 0, "kind": "reaction_time", "value_ms": 400}]}
 
     async def get_user(name):
         users = {"admin": ("admin", "pw"), "viewer": ("researcher", "pw")}

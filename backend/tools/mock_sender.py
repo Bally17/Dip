@@ -53,8 +53,6 @@ async def run_session(url: str, seconds: int, hz: int, participant: str) -> None
                                           "value_ms": random.gauss(400 + phase * 80, 40)}))
                 await ws.recv()
             await asyncio.sleep(1 / hz)
-        await ws.send(json.dumps({**base, "type": "questionnaire", "score": 2 + phase * 3}))
-        await ws.recv()
 
 
 async def main() -> None:

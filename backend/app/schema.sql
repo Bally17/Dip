@@ -39,12 +39,8 @@ CREATE TABLE IF NOT EXISTS events (
     value_ms real NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS questionnaires (
-    ts timestamptz NOT NULL,
-    session text NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
-    phase int NOT NULL,
-    score real NOT NULL
-);
+-- Dotazník z formátu vypadol, tabuľku zo starších inštalácií odstránime.
+DROP TABLE IF EXISTS questionnaires;
 
 SELECT add_retention_policy('samples', INTERVAL '365 days', if_not_exists => TRUE);
 
